@@ -2,50 +2,66 @@
 
 HTML-интерфейс для **поиска в интернете** и **парсинга страниц** через [FireCrawl API](https://www.firecrawl.dev/).
 
-- Поиск по запросу + markdown найденных страниц
-- Парсинг одного URL
-- Локальный Python-прокси (обход CORS браузера)
+## Использовать по ссылке (без скачивания)
 
-## Быстрый старт
+1. Включите **GitHub Pages** в репозитории:
+   - **Settings** → **Pages**
+   - **Source:** Deploy from a branch
+   - **Branch:** `main` → папка **`/docs`**
+   - **Save**
+
+2. Через 1–2 минуты откройте:
+
+   **`https://ВАШ-ЛОГИН.github.io/firecrawl-parser/`**
+
+   Пример: `https://github.com/Aleksey341/firecrawl-parser` →  
+   `https://aleksey341.github.io/firecrawl-parser/`
+
+3. Вставьте **API-ключ FireCrawl** (поле слева).
+
+4. Выполните поиск или парсинг URL → кнопка **Excel** для сохранения.
+
+> Скачивание и Python **не нужны** — всё работает в браузере по ссылке.
+
+---
+
+## Локальный запуск (опционально)
 
 ```bash
 pip install -r requirements.txt
 python server.py
 ```
 
-Откройте: **http://127.0.0.1:8765/**
+Откройте: http://127.0.0.1:8765/
 
-API-ключ FireCrawl:
-- введите в поле на странице (сохраняется в браузере), или
-- задайте переменную окружения:
+---
 
-```bash
-# Windows PowerShell
-$env:FIRECRAWL_API_KEY="fc-ваш-ключ"
-python server.py
-```
+## API-ключ
 
-Ключ: https://www.firecrawl.dev/app/api-keys
+Получить: https://www.firecrawl.dev/app/api-keys
+
+- В онлайн-режиме — вводите в форму (хранится только в браузере)
+- Локально — можно задать `FIRECRAWL_API_KEY` в окружении
+
+**Не коммитьте ключ в git.**
+
+---
+
+## Экспорт в Excel
+
+Кнопка **Excel** → файл с листами **Результаты** и **Сводка**.
+
+---
 
 ## Структура
 
 | Файл | Назначение |
 |------|------------|
-| `firecrawl_parser.html` | UI |
-| `server.py` | Flask-прокси к FireCrawl |
-| `requirements.txt` | Зависимости |
+| `docs/index.html` | Версия для GitHub Pages |
+| `firecrawl_parser.html` | Копия для локального сервера |
+| `server.py` | Локальный прокси (не обязателен) |
 
-## API (локально)
-
-- `GET /api/health` — проверка сервера
-- `POST /api/firecrawl/search` — поиск `{ "query": "...", "limit": 5, "scrape": true }`
-- `POST /api/firecrawl/scrape` — парсинг `{ "url": "https://...", "formats": ["markdown"] }`
-
-Ключ можно передать в теле: `"apiKey": "fc-..."` или через `FIRECRAWL_API_KEY`.
-
-## GitHub Pages
-
-Статический HTML **без сервера работать не будет** — нужен прокси. Для публикации UI используйте GitHub Pages только как витрину, а сервер — локально или на VPS/Heroku/Railway.
+---
 
 ## Лицензия
 
