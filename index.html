@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FireCrawl — поиск и парсинг</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0e14; --bg-card: #141820; --bg-input: #0f1218;
+      --accent: #f97316; --accent-dim: #ea580c; --accent-glow: rgba(249,115,22,.18);
+      --success: #22c55e; --error: #f87171; --text: #e8eaef; --text-muted: #8b93a7;
+      --border: rgba(255,255,255,.08); --radius: 10px;
+      --font: 'IBM Plex Sans', sans-serif; --mono: 'IBM Plex Mono', monospace;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.55;min-height:100vh}
+    .topbar{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.5rem;border-bottom:1px solid var(--border);background:var(--bg-card);position:sticky;top:0;z-index:10;gap:1rem;flex-wrap:wrap}
+    .topbar-brand{font-weight:700;font-size:.95rem}.topbar-brand span{color:var(--accent)}
+    .topbar-meta{font-size:.78rem;color:var(--text-muted);display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+    .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#d4a017;margin-right:.35rem}
+    .dot.ok{background:var(--success)}
+    .hero{max-width:1100px;margin:0 auto;padding:2rem 1.5rem 1rem}
+    .hero-badge{display:inline-block;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);border:1px solid rgba(249,115,22,.35);padding:.25rem .65rem;border-radius:999px;margin-bottom:.75rem}
+    h1{font-size:clamp(1.35rem,4vw,1.9rem);font-weight:700;margin-bottom:.5rem}
+    .hero-lead{color:var(--text-muted);max-width:760px;font-size:.95rem}
+    .banner{max-width:1100px;margin:0 auto 1rem;padding:0 1.5rem}
+    .banner-inner{background:rgba(212,160,23,.08);border:1px solid rgba(212,160,23,.35);border-radius:var(--radius);padding:.75rem 1rem;font-size:.82rem;color:var(--text-muted)}
+    .banner-inner.ok{background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.35)}
+    .banner-inner code{font-family:var(--mono);color:#fdba74}
+    .tabs{display:flex;flex-wrap:wrap;gap:.5rem;max-width:1100px;margin:1rem auto 0;padding:0 1.5rem}
+    .tab-btn{font-family:var(--font);font-size:.85rem;font-weight:500;padding:.55rem 1rem;border:1px solid var(--border);background:var(--bg-card);color:var(--text-muted);border-radius:var(--radius);cursor:pointer}
+    .tab-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+    .wrap{max-width:1100px;margin:1rem auto 3rem;padding:0 1.5rem}
+    .grid{display:grid;grid-template-columns:minmax(280px,380px) 1fr;gap:1.25rem;align-items:start}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}}
+    .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .card-head{padding:.85rem 1.15rem;border-bottom:1px solid var(--border);font-size:.75rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+    .card-body{padding:1.15rem}
+    .field{margin-bottom:1rem}
+    .field label{display:block;font-size:.78rem;color:var(--text-muted);margin-bottom:.35rem}
+    .field input,.field textarea,.field select{width:100%;font-family:var(--font);font-size:.88rem;padding:.6rem .75rem;background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text)}
+    .field textarea{min-height:72px;resize:vertical;font-family:var(--mono);font-size:.8rem}
+    .field-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+    .checks{display:flex;flex-wrap:wrap;gap:.75rem 1rem;margin:.25rem 0 .75rem;font-size:.84rem;color:var(--text-muted)}
+    .checks label{display:flex;align-items:center;gap:.4rem;cursor:pointer}
+    .checks input{width:auto}
+    .hint{font-size:.75rem;color:var(--text-muted);margin-top:.35rem}
+    .btn-run{width:100%;margin-top:.35rem;font-family:var(--font);font-size:.9rem;font-weight:600;padding:.75rem;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);cursor:pointer}
+    .btn-run:hover:not(:disabled){filter:brightness(1.06)}
+    .btn-run:disabled{opacity:.55;cursor:not-allowed}
+    .loader{display:none;padding:1rem 1.15rem;border-top:1px solid var(--border)}
+    .loader.visible{display:block}
+    .loader-step{display:flex;gap:.6rem;font-size:.85rem;color:var(--text-muted);padding:.3rem 0;opacity:.35}
+    .loader-step.active{opacity:1;color:var(--text)}.loader-step.done{opacity:.7;color:var(--success)}
+    .placeholder{padding:3rem 1.5rem;text-align:center;color:var(--text-muted)}
+    .result-head{display:flex;justify-content:space-between;align-items:center;padding:.85rem 1.15rem;border-bottom:1px solid var(--border);gap:.75rem;flex-wrap:wrap}
+    .result-title{font-size:.9rem;font-weight:600}
+    .result-actions{display:flex;gap:.4rem;flex-wrap:wrap}
+    .btn-sm{font-family:var(--font);font-size:.75rem;padding:.35rem .7rem;background:transparent;border:1px solid var(--border);color:var(--text-muted);border-radius:6px;cursor:pointer}
+    .btn-sm:hover{border-color:var(--accent);color:var(--accent)}
+    .kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;padding:1rem 1.15rem;border-bottom:1px solid var(--border)}
+    .kpi{text-align:center;padding:.55rem;background:var(--bg-input);border-radius:6px}
+    .kpi-val{font-size:1.2rem;font-weight:700;color:var(--accent)}
+    .kpi-label{font-size:.65rem;color:var(--text-muted);text-transform:uppercase;margin-top:.15rem}
+    .results-list{padding:.75rem 1rem 1rem;max-height:680px;overflow:auto}
+    .result-item{border:1px solid var(--border);border-radius:8px;margin-bottom:.75rem;background:var(--bg-input);overflow:hidden}
+    .result-item-head{padding:.85rem 1rem;cursor:pointer}
+    .result-item-head:hover{background:rgba(255,255,255,.02)}
+    .result-item-title{font-size:.92rem;font-weight:600;margin-bottom:.25rem}
+    .result-item-url{font-family:var(--mono);font-size:.72rem;color:#fdba74;word-break:break-all}
+    .result-item-desc{font-size:.8rem;color:var(--text-muted);margin-top:.45rem}
+    .result-item-body{display:none;padding:0 1rem 1rem;border-top:1px solid var(--border)}
+    .result-item.open .result-item-body{display:block}
+    .result-item-body pre{font-family:var(--mono);font-size:.74rem;white-space:pre-wrap;word-break:break-word;background:#0a0c10;padding:.85rem;border-radius:6px;max-height:360px;overflow:auto;margin-top:.75rem}
+    .error-box{margin:1rem 1.15rem;padding:.85rem 1rem;border:1px solid rgba(248,113,113,.35);background:rgba(248,113,113,.08);border-radius:8px;color:#fecaca;font-size:.84rem;display:none}
+    .error-box.visible{display:block}
+    .panel{display:none}.panel.active{display:block}
+    a{color:#fdba74}
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-brand"><span>FireCrawl</span> · парсер</div>
+  <div class="topbar-meta">
+    <span id="serverStatus"><span class="dot"></span>Сервер…</span>
+  </div>
+</header>
+
+<div class="banner">
+  <div class="banner-inner" id="serverBanner">
+    Запустите локальный прокси: <code>python server.py</code> и откройте
+    <a href="http://127.0.0.1:8765/">http://127.0.0.1:8765/</a>.
+    API-ключ FireCrawl — в поле ниже или в переменной <code>FIRECRAWL_API_KEY</code>.
+  </div>
+</div>
+
+<section class="hero">
+  <span class="hero-badge">Search · Scrape · Markdown</span>
+  <h1>Поиск информации в интернете и парсинг страниц</h1>
+  <p class="hero-lead" id="heroLead">Откройте по ссылке GitHub Pages — скачивание не нужно. Введите API-ключ FireCrawl, выполните поиск или парсинг URL и сохраните результат в Excel.</p>
+</section>
+
+<nav class="tabs">
+  <button class="tab-btn active" data-tab="search">🔍 Поиск в интернете</button>
+  <button class="tab-btn" data-tab="scrape">📄 Парсинг URL</button>
+</nav>
+
+<div class="wrap">
+  <div class="grid">
+    <div>
+      <div class="card">
+        <div class="card-head">API-ключ FireCrawl</div>
+        <div class="card-body">
+          <div class="field">
+            <label>Ключ (fc-…)</label>
+            <input id="apiKey" type="password" placeholder="fc-xxxxxxxx" autocomplete="off">
+            <p class="hint">Сохраняется только в браузере. Получить ключ: <a href="https://www.firecrawl.dev/app/api-keys" target="_blank" rel="noopener">firecrawl.dev</a></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel active" id="panel-search">
+        <div class="card" style="margin-top:1rem">
+          <div class="card-head">Параметры поиска</div>
+          <div class="card-body">
+            <div class="field">
+              <label>Запрос</label>
+              <textarea id="searchQuery" rows="3" placeholder="Например: рынок противогазов в России 2025"></textarea>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Кол-во результатов</label>
+                <select id="searchLimit">
+                  <option value="3">3</option>
+                  <option value="5" selected>5</option>
+                  <option value="8">8</option>
+                  <option value="10">10</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Язык / регион</label>
+                <select id="searchLang">
+                  <option value="ru" selected>ru</option>
+                  <option value="">авто</option>
+                  <option value="en">en</option>
+                </select>
+              </div>
+            </div>
+            <div class="checks">
+              <label><input type="checkbox" id="searchScrape" checked> Загрузить полный текст (markdown)</label>
+              <label><input type="checkbox" id="srcWeb" checked> Web</label>
+              <label><input type="checkbox" id="srcNews"> News</label>
+            </div>
+            <div class="field">
+              <label>Только домены (через запятую, опционально)</label>
+              <input id="includeDomains" placeholder="wikipedia.org, rbc.ru">
+            </div>
+            <button class="btn-run" id="btnSearch">▶ Найти и распарсить</button>
+          </div>
+          <div class="loader" id="loader-search"></div>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-scrape">
+        <div class="card" style="margin-top:1rem">
+          <div class="card-head">Парсинг одной страницы</div>
+          <div class="card-body">
+            <div class="field">
+              <label>URL</label>
+              <input id="scrapeUrl" type="url" placeholder="https://example.com/page">
+            </div>
+            <div class="checks">
+              <label><input type="checkbox" id="fmtMarkdown" checked> Markdown</label>
+              <label><input type="checkbox" id="fmtLinks"> Ссылки</label>
+              <label><input type="checkbox" id="fmtHtml"> HTML</label>
+            </div>
+            <button class="btn-run" id="btnScrape">▶ Распарсить страницу</button>
+          </div>
+          <div class="loader" id="loader-scrape"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="resultsCard">
+      <div class="placeholder" id="placeholder">
+        <span style="font-size:2rem;opacity:.3">🔥</span>
+        <p>Результаты поиска или парсинга появятся здесь</p>
+      </div>
+      <div id="resultsArea" style="display:none">
+        <div class="result-head">
+          <span class="result-title" id="resultsTitle">Результаты</span>
+          <div class="result-actions">
+            <button class="btn-sm" id="btnCopyJson">JSON</button>
+            <button class="btn-sm" id="btnCopyMd">Markdown</button>
+            <button class="btn-sm primary" id="btnExportExcel">Excel</button>
+          </div>
+        </div>
+        <div class="kpi-row" id="kpiRow"></div>
+        <div class="error-box" id="errorBox"></div>
+        <div class="results-list" id="resultsList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script>
+const FIRECRAWL_API = 'https://api.firecrawl.dev/v2';
+const USE_LOCAL_PROXY = (location.hostname === '127.0.0.1' || location.hostname === 'localhost') && location.port === '8765';
+const API_BASE = location.origin;
+
+const LOADERS = {
+  search: ['Отправка запроса в FireCrawl…', 'Поиск по интернету…', 'Парсинг найденных страниц…', 'Готово'],
+  scrape: ['Загрузка страницы…', 'Рендер и извлечение контента…', 'Форматирование markdown…', 'Готово']
+};
+
+let lastPayload = null;
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function getApiKey() {
+  return document.getElementById('apiKey').value.trim();
+}
+
+function saveApiKey() {
+  const key = getApiKey();
+  if (key) localStorage.setItem('firecrawl_api_key', key);
+}
+
+function loadApiKey() {
+  const key = localStorage.getItem('firecrawl_api_key');
+  if (key) document.getElementById('apiKey').value = key;
+}
+
+function runLoader(id, done) {
+  const el = document.getElementById('loader-' + id);
+  el.innerHTML = LOADERS[id].map((t,i)=>`<div class="loader-step" data-i="${i}">${esc(t)}</div>`).join('');
+  el.classList.add('visible');
+  const steps = el.querySelectorAll('.loader-step');
+  let i = 0;
+  (function tick(){
+    steps.forEach((s,idx)=>{ s.classList.toggle('active',idx===i); s.classList.toggle('done',idx<i); });
+    if (i++ >= steps.length) { setTimeout(done, 250); return; }
+    setTimeout(tick, 450);
+  })();
+}
+
+function hideLoader(id) {
+  document.getElementById('loader-' + id).classList.remove('visible');
+}
+
+function normalizeItems(data) {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  const items = [];
+  for (const key of ['web', 'news', 'images']) {
+    if (Array.isArray(data[key])) items.push(...data[key]);
+  }
+  return items;
+}
+
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = msg;
+  box.classList.add('visible');
+}
+
+function hideError() {
+  document.getElementById('errorBox').classList.remove('visible');
+}
+
+function renderResults(title, items, meta = {}) {
+  document.getElementById('placeholder').style.display = 'none';
+  const area = document.getElementById('resultsArea');
+  area.style.display = 'block';
+  document.getElementById('resultsTitle').textContent = title;
+  hideError();
+
+  const withMd = items.filter(i => i.markdown).length;
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi"><div class="kpi-val">${items.length}</div><div class="kpi-label">Результатов</div></div>
+    <div class="kpi"><div class="kpi-val">${withMd}</div><div class="kpi-label">С markdown</div></div>
+    <div class="kpi"><div class="kpi-val">${meta.ms ?? '—'}</div><div class="kpi-label">мс</div></div>`;
+
+  const list = document.getElementById('resultsList');
+  if (!items.length) {
+    list.innerHTML = '<p style="padding:1rem;color:var(--text-muted)">Ничего не найдено. Попробуйте другой запрос.</p>';
+    return;
+  }
+
+  list.innerHTML = items.map((item, idx) => {
+    const md = item.markdown || item.content || '';
+    return `<article class="result-item${idx === 0 ? ' open' : ''}" data-idx="${idx}">
+      <div class="result-item-head">
+        <div class="result-item-title">${esc(item.title || 'Без названия')}</div>
+        <div class="result-item-url">${esc(item.url || item.sourceURL || '')}</div>
+        ${item.description || item.snippet ? `<div class="result-item-desc">${esc(item.description || item.snippet)}</div>` : ''}
+      </div>
+      <div class="result-item-body">
+        ${md ? `<pre>${esc(md)}</pre>` : '<p style="color:var(--text-muted);font-size:.82rem;margin-top:.75rem">Markdown не загружен. Включите «Загрузить полный текст» или откройте URL.</p>'}
+      </div>
+    </article>`;
+  }).join('');
+
+  list.querySelectorAll('.result-item-head').forEach(head => {
+    head.addEventListener('click', () => head.parentElement.classList.toggle('open'));
+  });
+
+  lastPayload = { title, items, meta };
+}
+
+async function apiPost(path, body) {
+  saveApiKey();
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...body, apiKey: getApiKey() || undefined })
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error || json.message || `HTTP ${res.status}`);
+  if (json.success === false) throw new Error(json.error || 'FireCrawl вернул ошибку');
+  return json;
+}
+
+function buildDirectPayload(kind, body) {
+  if (kind === 'search') {
+    const payload = {
+      query: body.query,
+      limit: body.limit
+    };
+    if (body.sources) payload.sources = body.sources;
+    if (body.includeDomains) payload.includeDomains = body.includeDomains;
+    if (body.lang) payload.lang = body.lang;
+    if (body.scrape) payload.scrapeOptions = { formats: ['markdown', 'links'] };
+    return payload;
+  }
+  return { url: body.url, formats: body.formats || ['markdown'] };
+}
+
+async function firecrawlRequest(kind, body) {
+  saveApiKey();
+  const apiKey = getApiKey();
+  if (!apiKey) throw new Error('Укажите API-ключ FireCrawl в поле слева');
+
+  if (USE_LOCAL_PROXY) {
+    return apiPost(`/api/firecrawl/${kind}`, body);
+  }
+
+  const res = await fetch(`${FIRECRAWL_API}/${kind}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify(buildDirectPayload(kind, body))
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = json.error || json.message || `HTTP ${res.status}`;
+    if (/cors|failed to fetch|network/i.test(String(msg))) {
+      throw new Error('Браузер заблокировал запрос. Запустите локально: python server.py');
+    }
+    throw new Error(msg);
+  }
+  if (json.success === false) throw new Error(json.error || 'FireCrawl вернул ошибку');
+  return json;
+}
+
+async function doSearch() {
+  const query = document.getElementById('searchQuery').value.trim();
+  if (!query) { alert('Введите поисковый запрос'); return; }
+
+  const btn = document.getElementById('btnSearch');
+  btn.disabled = true;
+  hideError();
+
+  const sources = [];
+  if (document.getElementById('srcWeb').checked) sources.push('web');
+  if (document.getElementById('srcNews').checked) sources.push('news');
+
+  const body = {
+    query,
+    limit: Number(document.getElementById('searchLimit').value),
+    scrape: document.getElementById('searchScrape').checked,
+    lang: document.getElementById('searchLang').value || undefined,
+    sources: sources.length ? sources : ['web']
+  };
+  const domains = document.getElementById('includeDomains').value.split(',').map(s => s.trim()).filter(Boolean);
+  if (domains.length) body.includeDomains = domains;
+
+  runLoader('search', async () => {
+    try {
+      const t0 = performance.now();
+      const json = await firecrawlRequest('search', body);
+      const items = normalizeItems(json.data);
+      renderResults(`Поиск: «${query}»`, items, { ms: Math.round(performance.now() - t0) });
+    } catch (e) {
+      showError(e.message || String(e));
+      document.getElementById('resultsArea').style.display = 'block';
+      document.getElementById('placeholder').style.display = 'none';
+    } finally {
+      hideLoader('search');
+      btn.disabled = false;
+    }
+  });
+}
+
+async function doScrape() {
+  const url = document.getElementById('scrapeUrl').value.trim();
+  if (!url) { alert('Введите URL'); return; }
+
+  const formats = [];
+  if (document.getElementById('fmtMarkdown').checked) formats.push('markdown');
+  if (document.getElementById('fmtLinks').checked) formats.push('links');
+  if (document.getElementById('fmtHtml').checked) formats.push('html');
+  if (!formats.length) formats.push('markdown');
+
+  const btn = document.getElementById('btnScrape');
+  btn.disabled = true;
+  hideError();
+
+  runLoader('scrape', async () => {
+    try {
+      const t0 = performance.now();
+      const json = await firecrawlRequest('scrape', { url, formats });
+      const doc = json.data || {};
+      const items = [{
+        title: doc.metadata?.title || url,
+        url: doc.metadata?.sourceURL || url,
+        description: doc.metadata?.description || '',
+        markdown: doc.markdown || '',
+        links: doc.links || []
+      }];
+      renderResults(`Страница: ${url}`, items, { ms: Math.round(performance.now() - t0) });
+    } catch (e) {
+      showError(e.message || String(e));
+      document.getElementById('resultsArea').style.display = 'block';
+      document.getElementById('placeholder').style.display = 'none';
+    } finally {
+      hideLoader('scrape');
+      btn.disabled = false;
+    }
+  });
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+document.getElementById('btnSearch').addEventListener('click', doSearch);
+document.getElementById('btnScrape').addEventListener('click', doScrape);
+document.getElementById('apiKey').addEventListener('change', saveApiKey);
+
+document.getElementById('btnCopyJson').addEventListener('click', () => {
+  if (!lastPayload) return;
+  navigator.clipboard.writeText(JSON.stringify(lastPayload, null, 2));
+});
+
+document.getElementById('btnCopyMd').addEventListener('click', () => {
+  if (!lastPayload) return;
+  const md = lastPayload.items.map((it, i) => `# ${i + 1}. ${it.title || it.url}\n${it.url || ''}\n\n${it.markdown || it.description || ''}`).join('\n\n---\n\n');
+  navigator.clipboard.writeText(md);
+});
+
+function cellText(value, max = 32000) {
+  const text = String(value ?? '');
+  return text.length > max ? text.slice(0, max) + '… [обрезано для Excel]' : text;
+}
+
+function exportToExcel() {
+  if (!lastPayload?.items?.length) {
+    alert('Нет данных для экспорта. Сначала выполните поиск или парсинг.');
+    return;
+  }
+  if (typeof XLSX === 'undefined') {
+    alert('Библиотека Excel не загрузилась. Проверьте интернет и обновите страницу.');
+    return;
+  }
+
+  const exportedAt = new Date().toLocaleString('ru-RU');
+  const rows = [
+    ['№', 'Заголовок', 'URL', 'Описание', 'Текст (markdown)', 'Категория', 'Дата выгрузки'],
+    ...lastPayload.items.map((it, i) => [
+      i + 1,
+      cellText(it.title || 'Без названия', 500),
+      cellText(it.url || it.sourceURL || '', 2000),
+      cellText(it.description || it.snippet || '', 2000),
+      cellText(it.markdown || it.content || '', 32000),
+      cellText(it.category || it.source || '', 100),
+      exportedAt
+    ])
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [
+    { wch: 5 }, { wch: 42 }, { wch: 48 }, { wch: 50 }, { wch: 90 }, { wch: 14 }, { wch: 18 }
+  ];
+
+  const infoRows = [
+    ['Параметр', 'Значение'],
+    ['Источник запроса', lastPayload.title || ''],
+    ['Количество записей', lastPayload.items.length],
+    ['С markdown', lastPayload.items.filter(i => i.markdown || i.content).length],
+    ['Время ответа, мс', lastPayload.meta?.ms ?? ''],
+    ['Дата выгрузки', exportedAt]
+  ];
+  const wsInfo = XLSX.utils.aoa_to_sheet(infoRows);
+  wsInfo['!cols'] = [{ wch: 22 }, { wch: 60 }];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Результаты');
+  XLSX.utils.book_append_sheet(wb, wsInfo, 'Сводка');
+
+  const safeName = (lastPayload.title || 'firecrawl')
+    .replace(/[\\/:*?"<>|]/g, '_')
+    .slice(0, 40);
+  const fileName = `${safeName}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+  XLSX.writeFile(wb, fileName);
+}
+
+document.getElementById('btnExportExcel').addEventListener('click', exportToExcel);
+
+async function checkServer() {
+  const status = document.getElementById('serverStatus');
+  const banner = document.getElementById('serverBanner');
+
+  if (USE_LOCAL_PROXY) {
+    try {
+      const res = await fetch(`${API_BASE}/api/health`, { cache: 'no-store' });
+      if (!res.ok) throw new Error('offline');
+      const data = await res.json();
+      status.innerHTML = '<span class="dot ok"></span>Локальный сервер';
+      banner.classList.add('ok');
+      banner.innerHTML = `Локальный режим. Ключ — в поле слева или в <code>FIRECRAWL_API_KEY</code>.`;
+    } catch {
+      status.innerHTML = '<span class="dot"></span>Сервер не найден';
+    }
+    return;
+  }
+
+  status.innerHTML = '<span class="dot ok"></span>Онлайн-режим';
+  banner.classList.add('ok');
+  banner.innerHTML = `Работает по ссылке — скачивание не нужно. Введите API-ключ FireCrawl слева и нажмите «Найти» или «Распарсить». Экспорт в Excel — кнопкой справа над результатами.`;
+}
+
+loadApiKey();
+checkServer();
+</script>
+</body>
+</html>
