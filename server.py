@@ -70,6 +70,52 @@ def health():
     })
 
 
+def _normalize_domain(value: str) -> str:
+    domain = value.strip()
+    if domain.lower().startswith("http://"):
+        domain = domain[7:]
+    elif domain.lower().startswith("https://"):
+        domain = domain[8:]
+    return domain.split("/")[0].split(":")[0]
+
+
+def _build_search_body(payload: dict) -> dict:
+    query = str(payload.get("query") or "").strip()
+    body = {
+        "query": query,
+        "limit": max(1, min(int(payload.get("limit") or 5), 20)),
+    }
+
+    domains = [
+        _normalize_domain(str(item))
+        for item in (payload.get("includeDomains") or [])
+        if str(item).strip()
+    ]
+    if domains:
+        site_expr = " OR ".join(f"site:{domain}" for domain in domains)
+        body["query"] = f"{query} {site_expr}" if len(domains) == 1 else f"{query} ({site_expr})"
+
+    sources = payload.get("sources") or ["web"]
+    lang = str(payload.get("lang") or "").strip()
+    needs_sources = bool(lang) or len(sources) != 1 or sources[0] != "web"
+    if needs_sources:
+        built_sources = []
+        for source_type in sources:
+            src = {"type": source_type}
+            if lang and source_type in ("web", "news"):
+                src["lang"] = lang
+                if lang == "ru":
+                    src["country"] = "RU"
+                elif lang == "en":
+                    src["country"] = "US"
+            built_sources.append(src)
+        body["sources"] = built_sources
+
+    if payload.get("scrape"):
+        body["scrapeOptions"] = {"formats": ["markdown"]}
+    return body
+
+
 @app.route("/api/firecrawl/search", methods=["POST", "OPTIONS"])
 def firecrawl_search():
     if request.method == "OPTIONS":
@@ -80,18 +126,7 @@ def firecrawl_search():
         return jsonify({"error": "Укажите query"}), 400
 
     api_key = _firecrawl_key(payload)
-    body = {
-        "query": query,
-        "limit": max(1, min(int(payload.get("limit") or 5), 20)),
-    }
-    if payload.get("sources"):
-        body["sources"] = payload["sources"]
-    if payload.get("includeDomains"):
-        body["includeDomains"] = payload["includeDomains"]
-    if payload.get("lang"):
-        body["lang"] = payload["lang"]
-    if payload.get("scrape"):
-        body["scrapeOptions"] = {"formats": ["markdown", "links"]}
+    body = _build_search_body(payload)
 
     data, status = _firecrawl_post("/search", body, api_key)
     return jsonify(data), status

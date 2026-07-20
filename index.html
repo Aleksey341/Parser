@@ -142,8 +142,8 @@
               <div class="field">
                 <label>Язык / регион</label>
                 <select id="searchLang">
-                  <option value="ru" selected>ru</option>
                   <option value="">авто</option>
+                  <option value="ru" selected>ru</option>
                   <option value="en">en</option>
                 </select>
               </div>
@@ -326,19 +326,58 @@ async function apiPost(path, body) {
   return json;
 }
 
+function normalizeDomain(d) {
+  return String(d).trim().replace(/^https?:\/\//i, '').split('/')[0].split(':')[0];
+}
+
+function extractApiError(json, status) {
+  if (!json || typeof json !== 'object') return `HTTP ${status}`;
+  if (typeof json.error === 'string' && json.error) return json.error;
+  if (typeof json.message === 'string' && json.message) return json.message;
+  if (Array.isArray(json.details) && json.details.length) {
+    return json.details.map(d => d.message || d.path || JSON.stringify(d)).join('; ');
+  }
+  if (json.error && typeof json.error === 'object') {
+    return json.error.message || JSON.stringify(json.error);
+  }
+  return `HTTP ${status}`;
+}
+
 function buildDirectPayload(kind, body) {
   if (kind === 'search') {
-    const payload = {
-      query: body.query,
-      limit: body.limit
-    };
-    if (body.sources) payload.sources = body.sources;
-    if (body.includeDomains) payload.includeDomains = body.includeDomains;
-    if (body.lang) payload.lang = body.lang;
-    if (body.scrape) payload.scrapeOptions = { formats: ['markdown', 'links'] };
+    let query = String(body.query || '').trim();
+    const limit = Math.max(1, Math.min(parseInt(body.limit, 10) || 5, 20));
+    const payload = { query, limit };
+
+    const domains = (body.includeDomains || []).map(normalizeDomain).filter(Boolean);
+    if (domains.length) {
+      const siteExpr = domains.map(d => `site:${d}`).join(' OR ');
+      payload.query = domains.length === 1 ? `${query} ${siteExpr}` : `${query} (${siteExpr})`;
+    }
+
+    const sourceTypes = Array.isArray(body.sources) && body.sources.length ? body.sources : ['web'];
+    const lang = body.lang ? String(body.lang).trim() : '';
+    const needsSources = lang || sourceTypes.length > 1 || sourceTypes.some(s => s !== 'web');
+
+    if (needsSources) {
+      payload.sources = sourceTypes.map(type => {
+        const src = { type };
+        if (lang && (type === 'web' || type === 'news')) {
+          src.lang = lang;
+          if (lang === 'ru') src.country = 'RU';
+          else if (lang === 'en') src.country = 'US';
+        }
+        return src;
+      });
+    }
+
+    if (body.scrape) {
+      payload.scrapeOptions = { formats: ['markdown'] };
+    }
     return payload;
   }
-  return { url: body.url, formats: body.formats || ['markdown'] };
+  const formats = body.formats || ['markdown'];
+  return { url: body.url, formats };
 }
 
 async function firecrawlRequest(kind, body) {
@@ -360,13 +399,13 @@ async function firecrawlRequest(kind, body) {
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const msg = json.error || json.message || `HTTP ${res.status}`;
+    const msg = extractApiError(json, res.status);
     if (/cors|failed to fetch|network/i.test(String(msg))) {
       throw new Error('Браузер заблокировал запрос. Запустите локально: python server.py');
     }
     throw new Error(msg);
   }
-  if (json.success === false) throw new Error(json.error || 'FireCrawl вернул ошибку');
+  if (json.success === false) throw new Error(extractApiError(json, res.status));
   return json;
 }
 
