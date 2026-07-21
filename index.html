@@ -97,6 +97,16 @@
     .error-box{margin:1rem 1.15rem;padding:.85rem 1rem;border:1px solid rgba(248,113,113,.35);background:rgba(248,113,113,.08);border-radius:8px;color:#fecaca;font-size:.84rem;display:none}
     .error-box.visible{display:block}
     .panel{display:none}.panel.active{display:block}
+    .tab-btn.tab-hidden{display:none}
+    .tab-btn.tab-new{animation:tabPulse 1.2s ease 2;border-color:rgba(249,115,22,.65)}
+    @keyframes tabPulse{0%,100%{box-shadow:none}50%{box-shadow:0 0 0 3px rgba(249,115,22,.25)}}
+    .ai-report{padding:1rem 1.15rem 1.25rem;max-height:680px;overflow:auto;font-size:.88rem;line-height:1.65;color:var(--text)}
+    .ai-report h2,.ai-report h3{margin:1rem 0 .5rem;font-size:.95rem;color:#fdba74}
+    .ai-report p{margin:.45rem 0}
+    .ai-report ul,.ai-report ol{margin:.35rem 0 .65rem 1.2rem}
+    .ai-report li{margin:.2rem 0}
+    .ai-report a{color:#fdba74}
+    .ai-placeholder{padding:2rem 1.15rem;color:var(--text-muted);font-size:.88rem;line-height:1.6}
     a{color:#fdba74}
   </style>
 </head>
@@ -126,6 +136,7 @@
 <nav class="tabs">
   <button class="tab-btn active" data-tab="search" data-tip="Поиск страниц в Google по ключевым словам">🔍 Поиск</button>
   <button class="tab-btn" data-tab="research" data-tip="Длинное задание → много коротких поисков">📋 Исследование</button>
+  <button class="tab-btn tab-hidden" id="tabAiBtn" data-tab="ai" data-tip="ИИ проанализирует собранные материалы и даст рекомендации">🤖 Анализ и предложения ИИ</button>
   <button class="tab-btn" data-tab="crawl" data-tip="Обход всего каталога сайта по ссылкам">🕸 Обход каталога</button>
   <button class="tab-btn" data-tab="scrape" data-tip="Скачать текст одной конкретной страницы">📄 Парсинг URL</button>
 </nav>
@@ -198,7 +209,8 @@
               <label data-tip="Полный текст задания. Из него автоматически извлекутся ключевые слова в «кавычках».">Техническое задание</label>
               <textarea id="researchBrief" class="tall" rows="12" placeholder="Вставьте полное задание…" data-tip="Можно вставить большой промпт — он разобьётся на серию коротких поисков."></textarea>
             </div>
-            <button type="button" class="btn-sm" id="btnLoadSvoTemplate" style="margin-bottom:.75rem" data-tip="Подставит готовое задание про практики трудоустройства ветеранов СВО">Загрузить шаблон: ветераны СВО</button>
+            <button type="button" class="btn-sm" id="btnLoadHrTemplate" style="margin-bottom:.75rem" data-tip="Подставит пример задания, ключевых слов и доменов для HR-исследования">Пример: HR</button>
+            <button type="button" class="btn-sm" id="btnLoadSvoTemplate" style="margin-bottom:.75rem;margin-left:.35rem" data-tip="Подставит задание про практики трудоустройства ветеранов СВО">Шаблон: ветераны СВО</button>
             <div class="field-row">
               <div class="field">
                 <label data-tip="Сколько ссылок собирать за один ключевой запрос.">Результатов на запрос</label>
@@ -236,6 +248,30 @@
           </div>
           <div class="progress-line" id="researchProgress"></div>
           <div class="loader" id="loader-research"></div>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-ai">
+        <div class="card" style="margin-top:1rem">
+          <div class="card-head">Анализ и предложения ИИ</div>
+          <div class="card-body">
+            <p class="hint" style="margin-bottom:.75rem">Доступно после исследования. ИИ прочитает собранные ссылки и тексты, сформирует сводку, выводы и рекомендации по вашему заданию.</p>
+            <div class="field">
+              <label data-tip="Ключ OpenAI для GPT-4o-mini. Нужен только для AI-анализа, не для FireCrawl.">Ключ OpenAI (sk-…)</label>
+              <input id="openaiKey" type="password" placeholder="sk-xxxxxxxx" autocomplete="off" data-tip="Получить: platform.openai.com → API keys. Или задайте OPENAI_API_KEY в server.py">
+            </div>
+            <div class="field">
+              <label data-tip="Что именно должен проанализировать ИИ. По умолчанию — из поля «Техническое задание».">Фокус анализа (опционально)</label>
+              <textarea id="aiFocus" rows="4" placeholder="Например: практики трудоустройства ветеранов СВО, типовые HR-инструменты, переносимые модели…" data-tip="Дополните или уточните, на что обратить внимание в отчёте."></textarea>
+            </div>
+            <div class="checks">
+              <label data-tip="Включить фрагменты markdown из найденных страниц (точнее, но дольше)."><input type="checkbox" id="aiUseMarkdown" checked> Использовать тексты страниц</label>
+            </div>
+            <button class="btn-run" id="btnAiAnalyze" data-tip="Отправит материалы в GPT-4o-mini → отчёт появится справа">▶ Провести AI-анализ</button>
+            <button type="button" class="btn-sm" id="btnAiCopyPrompt" style="margin-top:.5rem;width:100%" data-tip="Если нет ключа OpenAI — скопирует промпт и данные для ChatGPT">Скопировать промпт для ChatGPT</button>
+          </div>
+          <div class="progress-line" id="aiProgress"></div>
+          <div class="loader" id="loader-ai"></div>
         </div>
       </div>
 
@@ -329,6 +365,7 @@
         <div class="kpi-row" id="kpiRow"></div>
         <div class="error-box" id="errorBox"></div>
         <div class="results-list" id="resultsList"></div>
+        <div class="ai-report" id="aiResultsArea" style="display:none"></div>
       </div>
     </div>
   </div>
@@ -346,7 +383,8 @@ const LOADERS = {
   search: ['Отправка запроса в FireCrawl…', 'Поиск по интернету…', 'Парсинг найденных страниц…', 'Готово'],
   scrape: ['Загрузка страницы…', 'Рендер и извлечение контента…', 'Форматирование markdown…', 'Готово'],
   research: ['Разбор задания…', 'Пакетный поиск…', 'Объединение результатов…', 'Готово'],
-  crawl: ['Запуск обхода…', 'Сканирование страниц…', 'Сбор markdown…', 'Готово']
+  crawl: ['Запуск обхода…', 'Сканирование страниц…', 'Сбор markdown…', 'Готово'],
+  ai: ['Подготовка материалов…', 'Отправка в GPT…', 'Формирование рекомендаций…', 'Готово']
 };
 
 const MAX_SEARCH_QUERY = 500;
@@ -369,6 +407,71 @@ const PRACTICE_COLUMNS = [
   'Возможные субсидии и меры государственной поддержки', 'Оценка доказательности информации'
 ];
 
+const HR_RESEARCH_BRIEF = `Собери публичную информацию о лучших HR-практиках российских работодателей: адаптация и onboarding, вовлечённость, удержание, обучение и развитие, оценка эффективности, HR-аналитика, employer brand, удалённая и гибридная работа.
+
+Период публикаций: с 1 января 2023 года по текущую дату.
+
+Приоритетные сайты:
+* \`hrtimes.ru\`
+* \`hh.ru\`
+* \`mintrud.gov.ru\`
+* \`consultant.ru\`
+* \`hr-portal.ru\`
+* \`trudvsem.ru\`
+
+Используй ключевые слова:
+«адаптация новых сотрудников», «onboarding», «текучесть персонала», «employee engagement», «удержание сотрудников», «performance review», «HR analytics», «обучение и развитие персонала», «корпоративная культура», «employer brand», «гибридный формат работы», «eNPS», «наставничество», «карьерные треки», «система грейдов».`;
+
+const HR_KEYWORDS = `адаптация новых сотрудников
+onboarding
+текучесть персонала
+employee engagement
+удержание сотрудников
+performance review
+HR analytics
+обучение и развитие персонала
+корпоративная культура
+employer brand
+гибридный формат работы
+eNPS
+наставничество
+карьерные треки
+система грейдов`;
+
+const HR_DOMAINS = `hrtimes.ru hh.ru mintrud.gov.ru consultant.ru hr-portal.ru trudvsem.ru`;
+
+const HR_RESEARCH_BRIEF = `Собери публичную информацию о HR-практиках российских работодателей: онбординг и адаптация, удержание и вовлечённость, обучение и развитие, HR-аналитика, гибкие форматы работы, employer brand и корпоративная культура.
+
+Период публикаций: с 1 января 2023 года по текущую дату.
+
+Приоритетные сайты:
+* \`hh.ru\`
+* \`mintrud.gov.ru\`
+* \`consultant.ru\`
+* \`hrtimes.ru\`
+* \`trudvsem.ru\`
+
+Используй ключевые слова:
+«онбординг сотрудников», «адаптация персонала», «удержание сотрудников», «текучесть кадров», «вовлечённость сотрудников», «HR-аналитика», «employee journey», «наставничество», «корпоративное обучение», «гибкий график работы», «удалённая работа», «employer brand», «eNPS», «performance review», «talent management», «HR BP», «кадровый резерв».`;
+
+const HR_RESEARCH_KEYWORDS = `онбординг сотрудников
+адаптация персонала
+удержание сотрудников
+текучесть кадров
+вовлечённость сотрудников
+HR-аналитика
+employee journey
+наставничество
+корпоративное обучение
+employer brand
+eNPS
+performance review
+talent management
+HR BP
+кадровый резерв`;
+
+const HR_RESEARCH_DOMAINS = `hh.ru mintrud.gov.ru consultant.ru hrtimes.ru trudvsem.ru`;
+
 const SVO_RESEARCH_BRIEF = `Собери публичную информацию о практиках российских работодателей по трудоустройству, возвращению на прежнее рабочее место, профессиональной и социальной адаптации, сопровождению и удержанию ветеранов боевых действий и участников СВО.
 
 Период публикаций: с 1 января 2023 года по текущую дату.
@@ -386,6 +489,225 @@ const SVO_RESEARCH_BRIEF = `Собери публичную информацию
 «участники СВО», «ветераны боевых действий», «трудоустройство участников СВО», «возвращение на работу», «адаптация участников СВО», «реинтеграция работников», «сопровождение ветеранов», «корпоративная программа поддержки», «единое окно», «личный куратор», «группа заботы», «наставничество», «психологическая поддержка», «социальное сопровождение», «поддержка семей», «обучение руководителей», «подготовка трудового коллектива», «корпоративная культура», «внутренние коммуникации», «карта адаптации», «путь сотрудника», «employee journey», «CJM», «сообщество ветеранов», «волонтёрская программа», «удержание сотрудников», «текучесть», «отток», «субсидия работодателю», «профессиональное переобучение».`;
 
 let lastPayload = null;
+let lastAiReport = '';
+
+function getOpenAiKey() {
+  return document.getElementById('openaiKey').value.trim();
+}
+
+function saveOpenAiKey() {
+  const key = getOpenAiKey();
+  if (key) localStorage.setItem('openai_api_key', key);
+}
+
+function loadOpenAiKey() {
+  const key = localStorage.getItem('openai_api_key');
+  if (key) document.getElementById('openaiKey').value = key;
+}
+
+function setAiTabVisible(show, pulse = false) {
+  const tab = document.getElementById('tabAiBtn');
+  tab.classList.toggle('tab-hidden', !show);
+  tab.classList.toggle('tab-new', show && pulse);
+}
+
+function updateResultsViewForTab(tabName) {
+  const isAi = tabName === 'ai';
+  document.getElementById('resultsList').style.display = isAi ? 'none' : '';
+  document.getElementById('aiResultsArea').style.display = isAi ? 'block' : 'none';
+  document.getElementById('kpiRow').style.display = isAi ? 'none' : '';
+  document.querySelector('.export-hint').style.display = isAi ? 'none' : '';
+  if (isAi && !lastAiReport) {
+    document.getElementById('aiResultsArea').innerHTML = `<div class="ai-placeholder">
+      <p><strong>AI-анализ ещё не выполнен.</strong></p>
+      <p>Нажмите «Провести AI-анализ» слева. ИИ изучит ${lastPayload?.items?.length || 0} собранных источников и подготовит рекомендации.</p>
+      <p>Нет ключа OpenAI? Используйте «Скопировать промпт для ChatGPT».</p>
+    </div>`;
+  }
+}
+
+function simpleMdToHtml(md) {
+  return esc(md)
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h2>$1</h2>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`)
+    .replace(/\n{2,}/g, '</p><p>')
+    .replace(/^(?!<[hul])/gm, '')
+    .replace(/^/, '<p>').replace(/$/, '</p>');
+}
+
+function renderAiReport(text) {
+  lastAiReport = text;
+  document.getElementById('placeholder').style.display = 'none';
+  document.getElementById('resultsArea').style.display = 'block';
+  document.getElementById('resultsTitle').textContent = 'AI-анализ и рекомендации';
+  document.getElementById('aiResultsArea').innerHTML = simpleMdToHtml(text);
+  updateResultsViewForTab('ai');
+}
+
+function buildResearchContextForAi(useMarkdown) {
+  const items = lastPayload?.items || [];
+  const maxItems = 30;
+  const mdLimit = 900;
+  let total = 0;
+  const maxTotal = 14000;
+  const blocks = [];
+
+  for (const it of items.slice(0, maxItems)) {
+    let chunk = `### ${it.title || 'Без названия'}\nURL: ${it.url || it.sourceURL || '—'}\n`;
+    if (it.searchKeyword) chunk += `Ключ: ${it.searchKeyword}\n`;
+    if (it.description || it.snippet) chunk += `Описание: ${it.description || it.snippet}\n`;
+    if (useMarkdown && (it.markdown || it.content)) {
+      chunk += `\nТекст:\n${String(it.markdown || it.content).slice(0, mdLimit)}\n`;
+    }
+    if (total + chunk.length > maxTotal) break;
+    blocks.push(chunk);
+    total += chunk.length;
+  }
+
+  return {
+    text: blocks.join('\n---\n'),
+    used: blocks.length,
+    total: items.length
+  };
+}
+
+function buildAiPrompt() {
+  const brief = lastPayload?.meta?.researchBrief
+    || document.getElementById('researchBrief').value.trim()
+    || 'Анализ собранных материалов из интернета';
+  const focus = document.getElementById('aiFocus').value.trim();
+  const useMd = document.getElementById('aiUseMarkdown').checked;
+  const ctx = buildResearchContextForAi(useMd);
+
+  const userPrompt = `Техническое задание исследования:
+${brief}
+
+${focus ? `Фокус анализа:\n${focus}\n\n` : ''}Собрано источников: ${ctx.total}. В анализ передано: ${ctx.used}.
+
+Материалы:
+${ctx.text}
+
+Подготовь структурированный отчёт на русском языке:
+1. Краткая executive-сводка (5–7 предложений)
+2. 10 наиболее содержательных находок (с URL источников)
+3. Часто встречающиеся инструменты и подходы
+4. Типовая модель пути сотрудника (если есть в материалах)
+5. Роли HR, руководителя, наставника, куратора, семьи, сообщества
+6. Показатели эффективности из источников
+7. Три переносимые практики для крупной распределённой компании
+8. Влияние на корпоративную культуру
+9. Пробелы в данных и что искать дальше
+10. Конкретные рекомендации заказчику исследования
+
+Правила: не выдумывай факты; если данных нет — пиши «нет данных»; отделяй факты от планов; указывай ссылки на источники.`;
+
+  return {
+    system: 'Ты эксперт по HR, корпоративным практикам и аналитике открытых данных. Отвечай только на русском, структурированно, в markdown.',
+    user: userPrompt
+  };
+}
+
+async function callOpenAiAnalysis(prompt) {
+  saveOpenAiKey();
+  const payload = {
+    openaiKey: getOpenAiKey() || undefined,
+    model: 'gpt-4o-mini',
+    messages: [
+      { role: 'system', content: prompt.system },
+      { role: 'user', content: prompt.user }
+    ]
+  };
+
+  if (USE_LOCAL_PROXY) {
+    const res = await fetch(`${API_BASE}/api/ai/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.error || extractApiError(json, res.status));
+    return json.content || json.text || '';
+  }
+
+  const apiKey = getOpenAiKey();
+  if (!apiKey) throw new Error('Укажите ключ OpenAI (sk-…) или запустите python server.py с OPENAI_API_KEY');
+
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: payload.model,
+      messages: payload.messages,
+      temperature: 0.3
+    })
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error?.message || extractApiError(json, res.status));
+  return json.choices?.[0]?.message?.content || '';
+}
+
+function setAiProgress(text) {
+  const el = document.getElementById('aiProgress');
+  el.textContent = text;
+  el.classList.add('visible');
+}
+
+function hideAiProgress() {
+  document.getElementById('aiProgress').classList.remove('visible');
+}
+
+async function doAiAnalyze() {
+  if (!lastPayload?.items?.length || lastPayload.meta?.mode !== 'research') {
+    alert('Сначала выполните исследование и соберите ссылки');
+    return;
+  }
+
+  const btn = document.getElementById('btnAiAnalyze');
+  btn.disabled = true;
+  hideError();
+
+  runLoader('ai', async () => {
+    try {
+      setAiProgress('Формирование промпта…');
+      const prompt = buildAiPrompt();
+      setAiProgress('Отправка в GPT-4o-mini…');
+      const report = await callOpenAiAnalysis(prompt);
+      if (!report.trim()) throw new Error('ИИ вернул пустой ответ');
+      renderAiReport(report);
+      document.getElementById('tabAiBtn').click();
+      showToast('AI-анализ готов');
+    } catch (e) {
+      showError(e.message || String(e));
+      showToast('Ошибка AI-анализа — попробуйте «Скопировать промпт для ChatGPT»');
+    } finally {
+      hideLoader('ai');
+      hideAiProgress();
+      btn.disabled = false;
+    }
+  });
+}
+
+async function copyAiPrompt() {
+  if (!lastPayload?.items?.length) {
+    showToast('Нет данных исследования');
+    return;
+  }
+  const prompt = buildAiPrompt();
+  const full = `${prompt.system}\n\n---\n\n${prompt.user}`;
+  try {
+    await navigator.clipboard.writeText(full);
+    showToast('Промпт скопирован — вставьте в ChatGPT');
+  } catch {
+    showToast('Не удалось скопировать');
+  }
+}
 
 function esc(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -517,6 +839,11 @@ function renderResults(title, items, meta = {}) {
   });
 
   lastPayload = { title, items, meta };
+
+  if (meta.mode === 'research' && items.length > 0) {
+    setAiTabVisible(true, true);
+    showToast(`Исследование готово (${items.length} источников). Доступен AI-анализ →`);
+  }
 }
 
 async function apiPost(path, body) {
@@ -977,7 +1304,8 @@ async function doResearch() {
         queriesRun,
         errors,
         limit,
-        mode: 'research'
+        mode: 'research',
+        researchBrief: document.getElementById('researchBrief').value.trim()
       });
 
       if (errors) {
@@ -996,6 +1324,13 @@ async function doResearch() {
       btn.disabled = false;
     }
   });
+}
+
+function loadHrTemplate(switchTab = false) {
+  document.getElementById('researchBrief').value = HR_RESEARCH_BRIEF;
+  document.getElementById('researchKeywords').value = HR_RESEARCH_KEYWORDS;
+  document.getElementById('researchDomains').value = HR_RESEARCH_DOMAINS;
+  if (switchTab) document.querySelector('[data-tab="research"]').click();
 }
 
 function loadSvoTemplate(switchTab = true) {
@@ -1099,13 +1434,23 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    btn.classList.remove('tab-new');
+    updateResultsViewForTab(btn.dataset.tab);
+    if (btn.dataset.tab !== 'ai') {
+      document.getElementById('resultsTitle').textContent = lastPayload?.title || 'Результаты';
+    }
   });
 });
+
+document.getElementById('btnAiAnalyze').addEventListener('click', doAiAnalyze);
+document.getElementById('btnAiCopyPrompt').addEventListener('click', copyAiPrompt);
+document.getElementById('openaiKey').addEventListener('change', saveOpenAiKey);
 
 document.getElementById('btnSearch').addEventListener('click', doSearch);
 document.getElementById('btnResearch').addEventListener('click', doResearch);
 document.getElementById('btnCrawl').addEventListener('click', doCrawl);
 document.getElementById('btnCrawlPresetAuto').addEventListener('click', loadCrawlPresetAuto);
+document.getElementById('btnLoadHrTemplate').addEventListener('click', () => loadHrTemplate(true));
 document.getElementById('btnLoadSvoTemplate').addEventListener('click', () => loadSvoTemplate(true));
 document.getElementById('btnScrape').addEventListener('click', doScrape);
 document.getElementById('apiKey').addEventListener('change', saveApiKey);
@@ -1158,6 +1503,12 @@ document.getElementById('btnCopyJson').addEventListener('click', async () => {
 });
 
 document.getElementById('btnCopyMd').addEventListener('click', () => {
+  if (document.getElementById('tabAiBtn').classList.contains('active') && lastAiReport) {
+    downloadTextFile(lastAiReport, `AI_анализ_${new Date().toISOString().slice(0, 10)}.md`);
+    flashButton(document.getElementById('btnCopyMd'));
+    showToast('Отчёт AI-анализа скачан');
+    return;
+  }
   if (!lastPayload?.items?.length) {
     showToast('Нет данных — сначала выполните поиск или обход');
     return;
@@ -1305,10 +1656,11 @@ async function checkServer() {
 }
 
 loadApiKey();
+loadOpenAiKey();
 checkServer();
-if (!localStorage.getItem('research_brief_seeded')) {
-  loadSvoTemplate(false);
-  localStorage.setItem('research_brief_seeded', '1');
+if (!localStorage.getItem('research_hr_seeded')) {
+  loadHrTemplate(false);
+  localStorage.setItem('research_hr_seeded', '1');
 }
 </script>
 </body>

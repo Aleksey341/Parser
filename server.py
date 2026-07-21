@@ -219,6 +219,52 @@ def firecrawl_get_proxy():
     return jsonify(data), status
 
 
+@app.route("/api/ai/analyze", methods=["POST", "OPTIONS"])
+def ai_analyze():
+    if request.method == "OPTIONS":
+        return ("", 204)
+    payload = request.get_json(force=True, silent=True) or {}
+    api_key = str(payload.get("openaiKey") or payload.get("api_key") or "").strip()
+    api_key = api_key or os.environ.get("OPENAI_API_KEY", "").strip()
+    if not api_key:
+        return jsonify({"error": "Укажите ключ OpenAI (sk-…) или OPENAI_API_KEY"}), 400
+
+    messages = payload.get("messages") or []
+    if not messages:
+        return jsonify({"error": "Нет messages для анализа"}), 400
+
+    model = str(payload.get("model") or "gpt-4o-mini")
+    body = {"model": model, "messages": messages, "temperature": 0.3}
+    req = urllib.request.Request(
+        "https://api.openai.com/v1/chat/completions",
+        data=json.dumps(body).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=180) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            content = (
+                data.get("choices", [{}])[0]
+                .get("message", {})
+                .get("content", "")
+            )
+            return jsonify({"content": content, "success": True})
+    except urllib.error.HTTPError as exc:
+        raw = exc.read().decode("utf-8", errors="replace")
+        try:
+            err = json.loads(raw)
+            msg = err.get("error", {}).get("message") or raw
+        except json.JSONDecodeError:
+            msg = raw or exc.reason
+        return jsonify({"error": msg}), exc.code
+    except urllib.error.URLError as exc:
+        return jsonify({"error": f"Не удалось связаться с OpenAI: {exc.reason}"}), 502
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8765"))
     print(f"Откройте: http://127.0.0.1:{port}/")
