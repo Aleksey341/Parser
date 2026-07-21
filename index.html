@@ -1623,7 +1623,7 @@ function exportToExcel() {
     ['Лимит страниц', lastPayload.meta?.limit ?? ''],
     ['Время ответа, мс', lastPayload.meta?.ms ?? ''],
     ['Дата выгрузки', exportedAt],
-    ['Примечание', isCrawl ? 'Обход каталога через FireCrawl Crawl' : 'Колонки 1–36 заполняются вручную или через AI']
+    ['Примечание', isCrawl ? 'Обход каталога' : 'Колонки 1–36 заполняются вручную или через AI']
   ];
   const wsInfo = XLSX.utils.aoa_to_sheet(infoRows);
   wsInfo['!cols'] = [{ wch: 22 }, { wch: 60 }];
