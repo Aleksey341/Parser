@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -56,6 +57,41 @@ def _firecrawl_post(path: str, body: dict, api_key: str) -> tuple[dict, int]:
         return {"error": f"Не удалось связаться с FireCrawl: {exc.reason}"}, 502
 
 
+def _firecrawl_get(url: str, api_key: str) -> tuple[dict, int]:
+    headers = {}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    req = urllib.request.Request(url, headers=headers, method="GET")
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            return json.loads(resp.read().decode("utf-8")), resp.status
+    except urllib.error.HTTPError as exc:
+        raw = exc.read().decode("utf-8", errors="replace")
+        try:
+            err = json.loads(raw)
+        except json.JSONDecodeError:
+            err = {"error": raw or exc.reason}
+        return err, exc.code
+    except urllib.error.URLError as exc:
+        return {"error": f"Не удалось связаться с FireCrawl: {exc.reason}"}, 502
+
+
+def _build_crawl_body(payload: dict) -> dict:
+    body = {
+        "url": str(payload.get("url") or "").strip(),
+        "limit": max(1, min(int(payload.get("limit") or 50), 500)),
+        "maxDiscoveryDepth": max(1, int(payload.get("maxDiscoveryDepth") or 3)),
+        "crawlEntireDomain": bool(payload.get("crawlEntireDomain")),
+    }
+    if payload.get("includePaths"):
+        body["includePaths"] = payload["includePaths"]
+    if payload.get("excludePaths"):
+        body["excludePaths"] = payload["excludePaths"]
+    if payload.get("scrape"):
+        body["scrapeOptions"] = {"formats": ["markdown"]}
+    return body
+
+
 @app.route("/")
 def index():
     return app.send_static_file("firecrawl_parser.html")
@@ -83,17 +119,17 @@ def _build_search_body(payload: dict) -> dict:
     query = str(payload.get("query") or "").strip()
     body = {
         "query": query,
-        "limit": max(1, min(int(payload.get("limit") or 5), 20)),
+        "limit": max(1, min(int(payload.get("limit") or 5), 100)),
     }
 
-    domains = [
-        _normalize_domain(str(item))
-        for item in (payload.get("includeDomains") or [])
-        if str(item).strip()
-    ]
+    domains = []
+    raw_domains = payload.get("includeDomains")
+    if isinstance(raw_domains, list):
+        domains = [_normalize_domain(str(item)) for item in raw_domains if str(item).strip()]
+    elif raw_domains:
+        domains = [_normalize_domain(part) for part in re.split(r"[\s,;]+", str(raw_domains)) if part.strip()]
     if domains:
-        site_expr = " OR ".join(f"site:{domain}" for domain in domains)
-        body["query"] = f"{query} {site_expr}" if len(domains) == 1 else f"{query} ({site_expr})"
+        body["includeDomains"] = domains
 
     sources = payload.get("sources") or ["web"]
     lang = str(payload.get("lang") or "").strip()
@@ -113,6 +149,8 @@ def _build_search_body(payload: dict) -> dict:
 
     if payload.get("scrape"):
         body["scrapeOptions"] = {"formats": ["markdown"]}
+    if payload.get("tbs"):
+        body["tbs"] = str(payload["tbs"])
     return body
 
 
@@ -145,6 +183,39 @@ def firecrawl_scrape():
     formats = payload.get("formats") or ["markdown"]
     body = {"url": url, "formats": formats}
     data, status = _firecrawl_post("/scrape", body, api_key)
+    return jsonify(data), status
+
+
+@app.route("/api/firecrawl/crawl", methods=["POST", "OPTIONS"])
+def firecrawl_crawl():
+    if request.method == "OPTIONS":
+        return ("", 204)
+    payload = request.get_json(force=True, silent=True) or {}
+    url = str(payload.get("url") or "").strip()
+    if not url:
+        return jsonify({"error": "Укажите url"}), 400
+
+    api_key = _firecrawl_key(payload)
+    body = _build_crawl_body(payload)
+    data, status = _firecrawl_post("/crawl", body, api_key)
+    return jsonify(data), status
+
+
+@app.route("/api/firecrawl/get", methods=["GET", "OPTIONS"])
+def firecrawl_get_proxy():
+    if request.method == "OPTIONS":
+        return ("", 204)
+    api_key = _firecrawl_key(request.args)
+    next_url = str(request.args.get("next") or "").strip()
+    path = str(request.args.get("path") or "").strip()
+    if next_url:
+        target = next_url
+    elif path:
+        target = f"{FIRECRAWL_API}{path if path.startswith('/') else '/' + path}"
+    else:
+        return jsonify({"error": "Укажите path или next"}), 400
+
+    data, status = _firecrawl_get(target, api_key)
     return jsonify(data), status
 
 

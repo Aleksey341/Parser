@@ -59,7 +59,7 @@ python server.py
 |------|------------|
 | `docs/index.html` | Версия для GitHub Pages |
 | `firecrawl_parser.html` | Копия для локального сервера |
-| `server.py` | Локальный прокси (не обязателен) |
+| `server.py` | Локальный прокси (search, scrape, crawl) |
 
 ---
 

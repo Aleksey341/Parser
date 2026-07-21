@@ -41,6 +41,9 @@
     .field label{display:block;font-size:.78rem;color:var(--text-muted);margin-bottom:.35rem}
     .field input,.field textarea,.field select{width:100%;font-family:var(--font);font-size:.88rem;padding:.6rem .75rem;background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text)}
     .field textarea{min-height:72px;resize:vertical;font-family:var(--mono);font-size:.8rem}
+    .field textarea.tall{min-height:220px}
+    .progress-line{font-size:.78rem;color:var(--text-muted);padding:.5rem 1.15rem;border-top:1px solid var(--border);display:none}
+    .progress-line.visible{display:block}
     .field-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
     .checks{display:flex;flex-wrap:wrap;gap:.75rem 1rem;margin:.25rem 0 .75rem;font-size:.84rem;color:var(--text-muted)}
     .checks label{display:flex;align-items:center;gap:.4rem;cursor:pointer}
@@ -59,7 +62,8 @@
     .result-actions{display:flex;gap:.4rem;flex-wrap:wrap}
     .btn-sm{font-family:var(--font);font-size:.75rem;padding:.35rem .7rem;background:transparent;border:1px solid var(--border);color:var(--text-muted);border-radius:6px;cursor:pointer}
     .btn-sm:hover{border-color:var(--accent);color:var(--accent)}
-    .kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;padding:1rem 1.15rem;border-bottom:1px solid var(--border)}
+    .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;padding:1rem 1.15rem;border-bottom:1px solid var(--border)}
+    @media(max-width:700px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
     .kpi{text-align:center;padding:.55rem;background:var(--bg-input);border-radius:6px}
     .kpi-val{font-size:1.2rem;font-weight:700;color:var(--accent)}
     .kpi-label{font-size:.65rem;color:var(--text-muted);text-transform:uppercase;margin-top:.15rem}
@@ -103,7 +107,9 @@
 </section>
 
 <nav class="tabs">
-  <button class="tab-btn active" data-tab="search">🔍 Поиск в интернете</button>
+  <button class="tab-btn active" data-tab="search">🔍 Поиск</button>
+  <button class="tab-btn" data-tab="research">📋 Исследование</button>
+  <button class="tab-btn" data-tab="crawl">🕸 Обход каталога</button>
   <button class="tab-btn" data-tab="scrape">📄 Парсинг URL</button>
 </nav>
 
@@ -127,16 +133,18 @@
           <div class="card-body">
             <div class="field">
               <label>Запрос</label>
-              <textarea id="searchQuery" rows="3" placeholder="Например: рынок противогазов в России 2025"></textarea>
+              <textarea id="searchQuery" rows="3" placeholder="Короткий запрос, до 500 символов. Например: программа трудоустройства ветеранов СВО"></textarea>
+              <p class="hint">Это веб-поиск по ключевым словам, не анализ текста. Длинные инструкции и таблицы сюда не подходят — используйте 5–15 слов.</p>
             </div>
             <div class="field-row">
               <div class="field">
                 <label>Кол-во результатов</label>
                 <select id="searchLimit">
-                  <option value="3">3</option>
-                  <option value="5" selected>5</option>
-                  <option value="8">8</option>
-                  <option value="10">10</option>
+                  <option value="5">5</option>
+                  <option value="10" selected>10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
                 </select>
               </div>
               <div class="field">
@@ -155,11 +163,114 @@
             </div>
             <div class="field">
               <label>Только домены (через запятую, опционально)</label>
-              <input id="includeDomains" placeholder="wikipedia.org, rbc.ru">
+              <input id="includeDomains" placeholder="consultant.ru, normativ.kontur.ru">
+              <p class="hint">Через запятую или пробел. Без https://</p>
             </div>
             <button class="btn-run" id="btnSearch">▶ Найти и распарсить</button>
           </div>
           <div class="loader" id="loader-search"></div>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-research">
+        <div class="card" style="margin-top:1rem">
+          <div class="card-head">Пакетное исследование</div>
+          <div class="card-body">
+            <p class="hint" style="margin-bottom:.75rem">Длинное задание разбивается на серию коротких поисков (лимит FireCrawl — 500 символов на запрос). Результаты объединяются и дедupliцируются.</p>
+            <div class="field">
+              <label>Техническое задание</label>
+              <textarea id="researchBrief" class="tall" rows="12" placeholder="Вставьте полное задание…"></textarea>
+            </div>
+            <button type="button" class="btn-sm" id="btnLoadSvoTemplate" style="margin-bottom:.75rem">Загрузить шаблон: ветераны СВО</button>
+            <div class="field-row">
+              <div class="field">
+                <label>Результатов на запрос</label>
+                <select id="researchLimit">
+                  <option value="10">10</option>
+                  <option value="20" selected>20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Ключевых запросов (макс.)</label>
+                <select id="researchMaxQueries">
+                  <option value="8">8</option>
+                  <option value="15" selected>15</option>
+                  <option value="20">20</option>
+                  <option value="30">30</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label>Ключевые слова (по одному на строку, авто из «кавычек»)</label>
+              <textarea id="researchKeywords" rows="6"></textarea>
+            </div>
+            <div class="field">
+              <label>Домены (через пробел или запятую)</label>
+              <textarea id="researchDomains" rows="3"></textarea>
+            </div>
+            <div class="checks">
+              <label><input type="checkbox" id="researchScrape"> Загрузить markdown (медленнее, больше кредитов)</label>
+              <label><input type="checkbox" id="researchDateFilter" checked> Публикации с 01.01.2023</label>
+              <label><input type="checkbox" id="researchBroad" checked> Доп. поиск без фильтра доменов</label>
+            </div>
+            <button class="btn-run" id="btnResearch">▶ Запустить исследование</button>
+          </div>
+          <div class="progress-line" id="researchProgress"></div>
+          <div class="loader" id="loader-research"></div>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-crawl">
+        <div class="card" style="margin-top:1rem">
+          <div class="card-head">Обход каталога сайта</div>
+          <div class="card-body">
+            <p class="hint" style="margin-bottom:.75rem">Обходит страницы сайта по ссылкам (FireCrawl Crawl). Подходит для каталогов объявлений, номеров, товаров. 1 страница ≈ 1 кредит.</p>
+            <button type="button" class="btn-sm" id="btnCrawlPresetAuto" style="margin-bottom:.75rem">Шаблон: auto-nomera.ru</button>
+            <div class="field">
+              <label>URL каталога</label>
+              <input id="crawlUrl" type="url" placeholder="https://auto-nomera.ru/">
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Макс. страниц</label>
+                <select id="crawlLimit">
+                  <option value="10">10</option>
+                  <option value="25">25</option>
+                  <option value="50" selected>50</option>
+                  <option value="100">100</option>
+                  <option value="200">200</option>
+                  <option value="500">500</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Глубина ссылок</label>
+                <select id="crawlDepth">
+                  <option value="2">2</option>
+                  <option value="3" selected>3</option>
+                  <option value="5">5</option>
+                  <option value="8">8</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label>Включить только пути (regex, по одному на строку, опционально)</label>
+              <textarea id="crawlIncludePaths" rows="2" placeholder="^/sale/.*&#10;^/auto/.*"></textarea>
+            </div>
+            <div class="field">
+              <label>Исключить пути (regex, опционально)</label>
+              <textarea id="crawlExcludePaths" rows="2" placeholder="^/admin/.*&#10;^/login.*"></textarea>
+            </div>
+            <div class="checks">
+              <label><input type="checkbox" id="crawlEntireDomain" checked> Весь домен (не только подпапки)</label>
+              <label><input type="checkbox" id="crawlScrape" checked> Markdown каждой страницы</label>
+              <label><input type="checkbox" id="crawlExtractPlates" checked> Извлекать госномера в Excel</label>
+            </div>
+            <button class="btn-run" id="btnCrawl">▶ Обойти каталог</button>
+          </div>
+          <div class="progress-line" id="crawlProgress"></div>
+          <div class="loader" id="loader-crawl"></div>
         </div>
       </div>
 
@@ -213,8 +324,46 @@ const API_BASE = location.origin;
 
 const LOADERS = {
   search: ['Отправка запроса в FireCrawl…', 'Поиск по интернету…', 'Парсинг найденных страниц…', 'Готово'],
-  scrape: ['Загрузка страницы…', 'Рендер и извлечение контента…', 'Форматирование markdown…', 'Готово']
+  scrape: ['Загрузка страницы…', 'Рендер и извлечение контента…', 'Форматирование markdown…', 'Готово'],
+  research: ['Разбор задания…', 'Пакетный поиск…', 'Объединение результатов…', 'Готово'],
+  crawl: ['Запуск обхода…', 'Сканирование страниц…', 'Сбор markdown…', 'Готово']
 };
+
+const MAX_SEARCH_QUERY = 500;
+const MAX_SEARCH_LIMIT = 100;
+
+const PRACTICE_COLUMNS = [
+  'Наименование организации', 'Отрасль', 'Регион', 'Название программы или практики',
+  'Дата публикации', 'Ссылка на источник', 'Целевая аудитория', 'Исходная проблема',
+  'Потребности целевой аудитории', 'Цель программы', 'Используемая модель или подход',
+  'Этапы пути сотрудника', 'Инструменты адаптации', 'Наличие единого окна или координатора',
+  'Наличие личного куратора или наставника', 'Работа с непосредственными руководителями',
+  'Обучение HR и руководителей', 'Подготовка трудового коллектива', 'Работа с семьями',
+  'Волонтёрские или ветеранские сообщества', 'Каналы коммуникации',
+  'Портал, горячая линия или другой цифровой сервис', 'Психологическое сопровождение',
+  'Профессиональное обучение и переобучение', 'Количество участников программы',
+  'Количество трудоустроенных', 'Текучесть или отток до запуска программы',
+  'Текучесть или отток после запуска программы', 'Другие количественные результаты',
+  'Период измерения результатов', 'Отзывы участников', 'Выявленные сложности',
+  'Рекомендации другим работодателям', 'Нормативное основание',
+  'Возможные субсидии и меры государственной поддержки', 'Оценка доказательности информации'
+];
+
+const SVO_RESEARCH_BRIEF = `Собери публичную информацию о практиках российских работодателей по трудоустройству, возвращению на прежнее рабочее место, профессиональной и социальной адаптации, сопровождению и удержанию ветеранов боевых действий и участников СВО.
+
+Период публикаций: с 1 января 2023 года по текущую дату.
+
+Приоритетные сайты:
+* \`consultant.ru\`
+* \`normativ.kontur.ru\`
+* \`bp.mintrud.gov.ru\`
+* \`mintrud.gov.ru\`
+* \`trudvsem.ru\`
+* \`sfr.gov.ru\`
+* \`fzo.info\`
+
+Используй следующие поисковые слова:
+«участники СВО», «ветераны боевых действий», «трудоустройство участников СВО», «возвращение на работу», «адаптация участников СВО», «реинтеграция работников», «сопровождение ветеранов», «корпоративная программа поддержки», «единое окно», «личный куратор», «группа заботы», «наставничество», «психологическая поддержка», «социальное сопровождение», «поддержка семей», «обучение руководителей», «подготовка трудового коллектива», «корпоративная культура», «внутренние коммуникации», «карта адаптации», «путь сотрудника», «employee journey», «CJM», «сообщество ветеранов», «волонтёрская программа», «удержание сотрудников», «текучесть», «отток», «субсидия работодателю», «профессиональное переобучение».`;
 
 let lastPayload = null;
 
@@ -280,15 +429,51 @@ function renderResults(title, items, meta = {}) {
   document.getElementById('resultsTitle').textContent = title;
   hideError();
 
-  const withMd = items.filter(i => i.markdown).length;
-  document.getElementById('kpiRow').innerHTML = `
-    <div class="kpi"><div class="kpi-val">${items.length}</div><div class="kpi-label">Результатов</div></div>
+  const withMd = items.filter(i => i.markdown || i.content).length;
+  let kpiCols;
+  if (meta.mode === 'crawl') {
+    kpiCols = `
+    <div class="kpi"><div class="kpi-val">${items.length}</div><div class="kpi-label">Страниц</div></div>
+    <div class="kpi"><div class="kpi-val">${meta.platesCount ?? 0}</div><div class="kpi-label">Номеров</div></div>
     <div class="kpi"><div class="kpi-val">${withMd}</div><div class="kpi-label">С markdown</div></div>
     <div class="kpi"><div class="kpi-val">${meta.ms ?? '—'}</div><div class="kpi-label">мс</div></div>`;
+  } else if (meta.queriesRun != null) {
+    kpiCols = `
+    <div class="kpi"><div class="kpi-val">${items.length}</div><div class="kpi-label">Уник. ссылок</div></div>
+    <div class="kpi"><div class="kpi-val">${withMd}</div><div class="kpi-label">С markdown</div></div>
+    <div class="kpi"><div class="kpi-val">${meta.queriesRun ?? '—'}</div><div class="kpi-label">Запросов</div></div>
+    <div class="kpi"><div class="kpi-val">${meta.ms ?? '—'}</div><div class="kpi-label">мс</div></div>`;
+  } else {
+    kpiCols = `
+    <div class="kpi"><div class="kpi-val">${items.length}</div><div class="kpi-label">Результатов</div></div>
+    <div class="kpi"><div class="kpi-val">${withMd}</div><div class="kpi-label">С markdown</div></div>
+    <div class="kpi"><div class="kpi-val">${meta.ms ?? '—'}</div><div class="kpi-label">мс</div></div>
+    <div class="kpi"><div class="kpi-val">${meta.limit ?? '—'}</div><div class="kpi-label">Лимит</div></div>`;
+  }
+  document.getElementById('kpiRow').innerHTML = kpiCols;
 
   const list = document.getElementById('resultsList');
   if (!items.length) {
-    list.innerHTML = '<p style="padding:1rem;color:var(--text-muted)">Ничего не найдено. Попробуйте другой запрос.</p>';
+    const hints = [];
+    if (meta.mode === 'crawl') {
+      hints.push('Проверьте URL каталога, глубину ссылок и фильтры путей.');
+      hints.push('1 страница = 1 кредит FireCrawl. Начните с лимита 25–50.');
+    } else if (meta.queryLen > MAX_SEARCH_QUERY) {
+      hints.push(`Запрос ${meta.queryLen} символов — лимит FireCrawl ${MAX_SEARCH_QUERY}. Сократите до ключевых слов.`);
+    } else if (meta.queryLen > 120) {
+      hints.push('Запрос слишком длинный для поиска — оставьте 5–15 ключевых слов.');
+    }
+    if (meta.domainsCount) {
+      hints.push(`Фильтр по ${meta.domainsCount} доменам — убедитесь, что они указаны верно.`);
+    }
+    if (meta.scrape) {
+      hints.push('Попробуйте снять «Загрузить полный текст» — иногда так быстрее находятся ссылки.');
+    }
+    hints.push('FireCrawl ищет страницы в интернете, а не заполняет таблицы по инструкции.');
+    list.innerHTML = `<p style="padding:1rem;color:var(--text-muted)">Ничего не найдено.</p>
+      <ul style="padding:0 1.25rem 1rem;color:var(--text-muted);font-size:.82rem;line-height:1.6">
+        ${hints.map(h => `<li>${esc(h)}</li>`).join('')}
+      </ul>`;
     return;
   }
 
@@ -298,6 +483,7 @@ function renderResults(title, items, meta = {}) {
       <div class="result-item-head">
         <div class="result-item-title">${esc(item.title || 'Без названия')}</div>
         <div class="result-item-url">${esc(item.url || item.sourceURL || '')}</div>
+        ${item.searchKeyword ? `<div class="result-item-desc">Ключ: ${esc(item.searchKeyword)}</div>` : ''}
         ${item.description || item.snippet ? `<div class="result-item-desc">${esc(item.description || item.snippet)}</div>` : ''}
       </div>
       <div class="result-item-body">
@@ -330,6 +516,13 @@ function normalizeDomain(d) {
   return String(d).trim().replace(/^https?:\/\//i, '').split('/')[0].split(':')[0];
 }
 
+function parseDomainsInput(value) {
+  return String(value || '')
+    .split(/[\s,;]+/)
+    .map(normalizeDomain)
+    .filter(Boolean);
+}
+
 function extractApiError(json, status) {
   if (!json || typeof json !== 'object') return `HTTP ${status}`;
   if (typeof json.error === 'string' && json.error) return json.error;
@@ -346,14 +539,15 @@ function extractApiError(json, status) {
 function buildDirectPayload(kind, body) {
   if (kind === 'search') {
     let query = String(body.query || '').trim();
-    const limit = Math.max(1, Math.min(parseInt(body.limit, 10) || 5, 20));
+    const limit = Math.max(1, Math.min(parseInt(body.limit, 10) || 5, MAX_SEARCH_LIMIT));
     const payload = { query, limit };
 
     const domains = (body.includeDomains || []).map(normalizeDomain).filter(Boolean);
     if (domains.length) {
-      const siteExpr = domains.map(d => `site:${d}`).join(' OR ');
-      payload.query = domains.length === 1 ? `${query} ${siteExpr}` : `${query} (${siteExpr})`;
+      payload.includeDomains = domains;
     }
+
+    if (body.tbs) payload.tbs = body.tbs;
 
     const sourceTypes = Array.isArray(body.sources) && body.sources.length ? body.sources : ['web'];
     const lang = body.lang ? String(body.lang).trim() : '';
@@ -409,9 +603,397 @@ async function firecrawlRequest(kind, body) {
   return json;
 }
 
+async function firecrawlGet(pathOrUrl) {
+  saveApiKey();
+  const apiKey = getApiKey();
+  if (!apiKey) throw new Error('Укажите API-ключ FireCrawl в поле слева');
+
+  if (USE_LOCAL_PROXY) {
+    const params = new URLSearchParams({ apiKey });
+    if (pathOrUrl.startsWith('http')) params.set('next', pathOrUrl);
+    else params.set('path', pathOrUrl);
+    const res = await fetch(`${API_BASE}/api/firecrawl/get?${params}`, { cache: 'no-store' });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(extractApiError(json, res.status));
+    if (json.success === false) throw new Error(extractApiError(json, res.status));
+    return json;
+  }
+
+  const url = pathOrUrl.startsWith('http') ? pathOrUrl : `${FIRECRAWL_API}${pathOrUrl}`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+    cache: 'no-store'
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(extractApiError(json, res.status));
+  if (json.success === false) throw new Error(extractApiError(json, res.status));
+  return json;
+}
+
+function parsePathPatterns(text) {
+  return String(text || '').split(/\n+/).map(s => s.trim()).filter(Boolean);
+}
+
+function buildCrawlPayload(body) {
+  const payload = {
+    url: body.url,
+    limit: Math.max(1, Math.min(parseInt(body.limit, 10) || 50, 500)),
+    maxDiscoveryDepth: Math.max(1, parseInt(body.maxDiscoveryDepth, 10) || 3),
+    crawlEntireDomain: !!body.crawlEntireDomain
+  };
+  if (body.includePaths?.length) payload.includePaths = body.includePaths;
+  if (body.excludePaths?.length) payload.excludePaths = body.excludePaths;
+  if (body.scrape) payload.scrapeOptions = { formats: ['markdown'] };
+  return payload;
+}
+
+async function firecrawlCrawlStart(body) {
+  saveApiKey();
+  const apiKey = getApiKey();
+  if (!apiKey) throw new Error('Укажите API-ключ FireCrawl в поле слева');
+
+  if (USE_LOCAL_PROXY) {
+    return apiPost('/api/firecrawl/crawl', body);
+  }
+
+  const res = await fetch(`${FIRECRAWL_API}/crawl`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify(buildCrawlPayload(body))
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(extractApiError(json, res.status));
+  if (json.success === false) throw new Error(extractApiError(json, res.status));
+  return json;
+}
+
+function normalizeCrawlPage(page) {
+  const meta = page.metadata || {};
+  return {
+    title: meta.title || page.title || 'Без названия',
+    url: meta.sourceURL || meta.url || page.url || '',
+    description: meta.description || '',
+    markdown: page.markdown || page.content || ''
+  };
+}
+
+const PLATE_RX = /[ABEKMHOPCTYXАВЕКМНОРСТУХ]\d{3}[ABEKMHOPCTYXАВЕКМНОРСТУХ]{2}\d{2,3}/gi;
+
+function extractPlateNumbers(text) {
+  const found = new Set();
+  const src = String(text || '');
+  let m;
+  const rx = new RegExp(PLATE_RX.source, PLATE_RX.flags);
+  while ((m = rx.exec(src))) {
+    found.add(m[0].toUpperCase().replace(/\s+/g, ''));
+  }
+  return [...found];
+}
+
+function collectPlatesFromItems(items) {
+  const rows = [];
+  const seen = new Set();
+  for (const it of items) {
+    const plates = extractPlateNumbers(`${it.title || ''}\n${it.markdown || ''}\n${it.description || ''}`);
+    for (const plate of plates) {
+      const key = `${plate}|${it.url}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      rows.push({ plate, url: it.url, title: it.title });
+    }
+  }
+  return rows;
+}
+
+function setCrawlProgress(text) {
+  const el = document.getElementById('crawlProgress');
+  el.textContent = text;
+  el.classList.add('visible');
+}
+
+function hideCrawlProgress() {
+  document.getElementById('crawlProgress').classList.remove('visible');
+}
+
+async function waitForCrawl(jobId, onProgress) {
+  const pages = [];
+  let pollTarget = `/crawl/${jobId}`;
+  let stagnant = 0;
+
+  for (let i = 0; i < 240; i++) {
+    const json = await firecrawlGet(pollTarget);
+    if (Array.isArray(json.data)) pages.push(...json.data);
+
+    const status = json.status || 'unknown';
+    const completed = json.completed ?? pages.length;
+    const total = json.total ?? json.limit ?? '?';
+    onProgress?.(`Статус: ${status} · страниц ${completed}/${total}`);
+
+    if (json.next) {
+      pollTarget = json.next;
+      stagnant = 0;
+      continue;
+    }
+
+    if (status === 'completed') break;
+    if (status === 'failed') throw new Error(json.error || 'Обход завершился с ошибкой');
+
+    stagnant++;
+    if (stagnant > 180) throw new Error('Превышено время ожидания обхода (9 мин)');
+
+    pollTarget = `/crawl/${jobId}`;
+    await new Promise(r => setTimeout(r, 3000));
+  }
+
+  return pages;
+}
+
+function loadCrawlPresetAuto() {
+  document.getElementById('crawlUrl').value = 'https://auto-nomera.ru/';
+  document.getElementById('crawlLimit').value = '50';
+  document.getElementById('crawlDepth').value = '4';
+  document.getElementById('crawlIncludePaths').value = '';
+  document.getElementById('crawlExcludePaths').value = '';
+  document.getElementById('crawlEntireDomain').checked = true;
+  document.getElementById('crawlScrape').checked = true;
+  document.getElementById('crawlExtractPlates').checked = true;
+  document.querySelector('[data-tab="crawl"]').click();
+}
+
+async function doCrawl() {
+  const url = document.getElementById('crawlUrl').value.trim();
+  if (!url) { alert('Укажите URL каталога'); return; }
+  if (!getApiKey()) { alert('Укажите API-ключ FireCrawl'); return; }
+
+  const btn = document.getElementById('btnCrawl');
+  btn.disabled = true;
+  hideError();
+
+  const body = {
+    url,
+    limit: Number(document.getElementById('crawlLimit').value),
+    maxDiscoveryDepth: Number(document.getElementById('crawlDepth').value),
+    crawlEntireDomain: document.getElementById('crawlEntireDomain').checked,
+    scrape: document.getElementById('crawlScrape').checked,
+    includePaths: parsePathPatterns(document.getElementById('crawlIncludePaths').value),
+    excludePaths: parsePathPatterns(document.getElementById('crawlExcludePaths').value)
+  };
+  const extractPlates = document.getElementById('crawlExtractPlates').checked;
+
+  runLoader('crawl', async () => {
+    try {
+      const t0 = performance.now();
+      setCrawlProgress('Запуск обхода…');
+      const started = await firecrawlCrawlStart(body);
+      const jobId = started.id || started.jobId;
+      if (!jobId) throw new Error('FireCrawl не вернул ID задачи обхода');
+
+      const pages = await waitForCrawl(jobId, setCrawlProgress);
+      const items = pages.map(normalizeCrawlPage).filter(it => it.url);
+      const plateRows = extractPlates ? collectPlatesFromItems(items) : [];
+
+      renderResults(`Обход: ${url}`, items, {
+        ms: Math.round(performance.now() - t0),
+        mode: 'crawl',
+        limit: body.limit,
+        platesCount: plateRows.length,
+        plateRows
+      });
+
+      if (!items.length) {
+        showError('Страницы не найдены. Увеличьте глубину, включите «Весь домен» или уберите фильтр путей.');
+      } else if (extractPlates && !plateRows.length) {
+        showError('Страницы собраны, но госномера в тексте не распознаны. Проверьте markdown или URL карточек объявлений.');
+      }
+    } catch (e) {
+      showError(e.message || String(e));
+      document.getElementById('resultsArea').style.display = 'block';
+      document.getElementById('placeholder').style.display = 'none';
+    } finally {
+      hideLoader('crawl');
+      hideCrawlProgress();
+      btn.disabled = false;
+    }
+  });
+}
+
+function extractKeywordsFromBrief(text) {
+  const found = [];
+  const re = /[«"]([^»"]{3,120})[»"]/g;
+  let m;
+  while ((m = re.exec(text))) found.push(m[1].trim());
+  return [...new Set(found)];
+}
+
+function extractDomainsFromBrief(text) {
+  const found = new Set();
+  const reList = [
+    /`([a-z0-9][a-z0-9.-]+\.[a-z]{2,}(?:\.[a-z]{2,})?)`/gi,
+    /\b([a-z0-9][a-z0-9.-]*\.(?:ru|com|info|org|gov\.ru))\b/gi
+  ];
+  for (const re of reList) {
+    let m;
+    const rx = new RegExp(re.source, re.flags);
+    while ((m = rx.exec(text))) {
+      const d = normalizeDomain(m[1]);
+      if (d && !/\s/.test(d)) found.add(d);
+    }
+  }
+  if (/ржд|rzd/i.test(text)) found.add('rzd.ru');
+  if (/ростех|rostec/i.test(text)) found.add('rostec.ru');
+  if (/россет/i.test(text)) found.add('rosseti.ru');
+  return [...found];
+}
+
+function parseBriefFields() {
+  const brief = document.getElementById('researchBrief').value;
+  const keywords = extractKeywordsFromBrief(brief);
+  const domains = extractDomainsFromBrief(brief);
+  document.getElementById('researchKeywords').value = keywords.join('\n');
+  document.getElementById('researchDomains').value = domains.join(' ');
+  return { keywords, domains };
+}
+
+function itemUrlKey(it) {
+  return String(it.url || it.sourceURL || '').toLowerCase().replace(/\/+$/, '');
+}
+
+function mergeSearchItems(bucket, items, keyword) {
+  const seen = new Set(bucket.map(itemUrlKey));
+  for (const it of items) {
+    const key = itemUrlKey(it);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    bucket.push({ ...it, searchKeyword: keyword });
+  }
+  return bucket;
+}
+
+function buildDateTbs() {
+  const today = new Date();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const yyyy = today.getFullYear();
+  return `cdr:1,cd_min:01/01/2023,cd_max:${mm}/${dd}/${yyyy}`;
+}
+
+function setResearchProgress(text) {
+  const el = document.getElementById('researchProgress');
+  el.textContent = text;
+  el.classList.add('visible');
+}
+
+function hideResearchProgress() {
+  document.getElementById('researchProgress').classList.remove('visible');
+}
+
+async function doResearch() {
+  if (!getApiKey()) {
+    alert('Укажите API-ключ FireCrawl');
+    return;
+  }
+
+  parseBriefFields();
+  const keywords = document.getElementById('researchKeywords').value
+    .split(/\n+/).map(s => s.trim()).filter(Boolean);
+  const domains = parseDomainsInput(document.getElementById('researchDomains').value);
+  const limit = Number(document.getElementById('researchLimit').value);
+  const maxQueries = Number(document.getElementById('researchMaxQueries').value);
+  const scrape = document.getElementById('researchScrape').checked;
+  const dateFilter = document.getElementById('researchDateFilter').checked;
+  const broad = document.getElementById('researchBroad').checked;
+
+  if (!keywords.length) {
+    alert('Не найдены ключевые слова. Нажмите «Загрузить шаблон» или добавьте слова в список.');
+    return;
+  }
+
+  const btn = document.getElementById('btnResearch');
+  btn.disabled = true;
+  hideError();
+
+  const jobs = [];
+  const kwSlice = keywords.slice(0, maxQueries);
+  for (const kw of kwSlice) {
+    if (domains.length) jobs.push({ query: kw, includeDomains: domains, label: kw });
+    if (broad) jobs.push({ query: kw, includeDomains: [], label: `${kw} (весь web)` });
+  }
+
+  const allItems = [];
+  let queriesRun = 0;
+  let errors = 0;
+  const t0 = performance.now();
+
+  runLoader('research', async () => {
+    try {
+      for (let i = 0; i < jobs.length; i++) {
+        const job = jobs[i];
+        setResearchProgress(`Запрос ${i + 1} из ${jobs.length}: «${job.label.slice(0, 60)}»…`);
+        try {
+          const body = {
+            query: job.query.slice(0, MAX_SEARCH_QUERY),
+            limit,
+            scrape,
+            lang: 'ru',
+            sources: ['web'],
+            tbs: dateFilter ? buildDateTbs() : undefined
+          };
+          if (job.includeDomains.length) body.includeDomains = job.includeDomains;
+          const json = await firecrawlRequest('search', body);
+          mergeSearchItems(allItems, normalizeItems(json.data), job.label);
+          queriesRun++;
+        } catch (e) {
+          errors++;
+          console.warn('Search failed:', job.label, e);
+        }
+        if (i < jobs.length - 1) await new Promise(r => setTimeout(r, 400));
+      }
+
+      renderResults(`Исследование: ${kwSlice.length} ключевых слов`, allItems, {
+        ms: Math.round(performance.now() - t0),
+        queriesRun,
+        errors,
+        limit,
+        mode: 'research'
+      });
+
+      if (errors) {
+        showError(`Часть запросов завершилась с ошибкой: ${errors} из ${jobs.length}. Проверьте баланс кредитов FireCrawl.`);
+      }
+      if (!allItems.length) {
+        showError('Ссылки не найдены. Попробуйте снять фильтр доменов или отключить фильтр по дате.');
+      }
+    } catch (e) {
+      showError(e.message || String(e));
+      document.getElementById('resultsArea').style.display = 'block';
+      document.getElementById('placeholder').style.display = 'none';
+    } finally {
+      hideLoader('research');
+      hideResearchProgress();
+      btn.disabled = false;
+    }
+  });
+}
+
+function loadSvoTemplate(switchTab = true) {
+  document.getElementById('researchBrief').value = SVO_RESEARCH_BRIEF;
+  parseBriefFields();
+  if (switchTab) document.querySelector('[data-tab="research"]').click();
+}
+
 async function doSearch() {
   const query = document.getElementById('searchQuery').value.trim();
   if (!query) { alert('Введите поисковый запрос'); return; }
+  if (query.length > MAX_SEARCH_QUERY) {
+    showError(`Запрос ${query.length} символов — лимит FireCrawl ${MAX_SEARCH_QUERY}. Перейдите на вкладку «Исследование» для длинных заданий.`);
+    document.getElementById('resultsArea').style.display = 'block';
+    document.getElementById('placeholder').style.display = 'none';
+    document.querySelector('[data-tab="research"]').click();
+    return;
+  }
 
   const btn = document.getElementById('btnSearch');
   btn.disabled = true;
@@ -428,7 +1010,7 @@ async function doSearch() {
     lang: document.getElementById('searchLang').value || undefined,
     sources: sources.length ? sources : ['web']
   };
-  const domains = document.getElementById('includeDomains').value.split(',').map(s => s.trim()).filter(Boolean);
+  const domains = parseDomainsInput(document.getElementById('includeDomains').value);
   if (domains.length) body.includeDomains = domains;
 
   runLoader('search', async () => {
@@ -436,7 +1018,13 @@ async function doSearch() {
       const t0 = performance.now();
       const json = await firecrawlRequest('search', body);
       const items = normalizeItems(json.data);
-      renderResults(`Поиск: «${query}»`, items, { ms: Math.round(performance.now() - t0) });
+      renderResults(`Поиск: «${query.slice(0, 80)}${query.length > 80 ? '…' : ''}»`, items, {
+        ms: Math.round(performance.now() - t0),
+        queryLen: query.length,
+        domainsCount: domains.length,
+        scrape: body.scrape,
+        limit: body.limit
+      });
     } catch (e) {
       showError(e.message || String(e));
       document.getElementById('resultsArea').style.display = 'block';
@@ -495,6 +1083,10 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 document.getElementById('btnSearch').addEventListener('click', doSearch);
+document.getElementById('btnResearch').addEventListener('click', doResearch);
+document.getElementById('btnCrawl').addEventListener('click', doCrawl);
+document.getElementById('btnCrawlPresetAuto').addEventListener('click', loadCrawlPresetAuto);
+document.getElementById('btnLoadSvoTemplate').addEventListener('click', () => loadSvoTemplate(true));
 document.getElementById('btnScrape').addEventListener('click', doScrape);
 document.getElementById('apiKey').addEventListener('change', saveApiKey);
 
@@ -525,37 +1117,82 @@ function exportToExcel() {
   }
 
   const exportedAt = new Date().toLocaleString('ru-RU');
-  const rows = [
-    ['№', 'Заголовок', 'URL', 'Описание', 'Текст (markdown)', 'Категория', 'Дата выгрузки'],
-    ...lastPayload.items.map((it, i) => [
-      i + 1,
-      cellText(it.title || 'Без названия', 500),
-      cellText(it.url || it.sourceURL || '', 2000),
-      cellText(it.description || it.snippet || '', 2000),
-      cellText(it.markdown || it.content || '', 32000),
-      cellText(it.category || it.source || '', 100),
-      exportedAt
-    ])
-  ];
+  const isCrawl = lastPayload.meta?.mode === 'crawl';
+
+  const rows = isCrawl
+    ? [
+        ['№', 'Госномер', 'Заголовок', 'URL', 'Описание', 'Текст (markdown)', 'Дата выгрузки'],
+        ...lastPayload.items.map((it, i) => [
+          i + 1,
+          cellText((it.plates || extractPlateNumbers(`${it.title}\n${it.markdown}`)).join(', '), 100),
+          cellText(it.title || 'Без названия', 500),
+          cellText(it.url || it.sourceURL || '', 2000),
+          cellText(it.description || it.snippet || '', 2000),
+          cellText(it.markdown || it.content || '', 32000),
+          exportedAt
+        ])
+      ]
+    : [
+        ['№', 'Ключевой запрос', 'Заголовок', 'URL', 'Описание', 'Текст (markdown)', 'Дата выгрузки'],
+        ...lastPayload.items.map((it, i) => [
+          i + 1,
+          cellText(it.searchKeyword || '', 200),
+          cellText(it.title || 'Без названия', 500),
+          cellText(it.url || it.sourceURL || '', 2000),
+          cellText(it.description || it.snippet || '', 2000),
+          cellText(it.markdown || it.content || '', 32000),
+          exportedAt
+        ])
+      ];
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [
-    { wch: 5 }, { wch: 42 }, { wch: 48 }, { wch: 50 }, { wch: 90 }, { wch: 14 }, { wch: 18 }
-  ];
+  ws['!cols'] = isCrawl
+    ? [{ wch: 5 }, { wch: 14 }, { wch: 42 }, { wch: 48 }, { wch: 50 }, { wch: 90 }, { wch: 18 }]
+    : [{ wch: 5 }, { wch: 28 }, { wch: 42 }, { wch: 48 }, { wch: 50 }, { wch: 90 }, { wch: 18 }];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, isCrawl ? 'Страницы' : 'Ссылки');
+
+  if (isCrawl && lastPayload.meta?.plateRows?.length) {
+    const plateSheet = [
+      ['№', 'Госномер', 'URL', 'Заголовок страницы'],
+      ...lastPayload.meta.plateRows.map((row, i) => [i + 1, row.plate, row.url, row.title || ''])
+    ];
+    const wsPlates = XLSX.utils.aoa_to_sheet(plateSheet);
+    wsPlates['!cols'] = [{ wch: 5 }, { wch: 14 }, { wch: 52 }, { wch: 42 }];
+    XLSX.utils.book_append_sheet(wb, wsPlates, 'Номера');
+  }
+
+  if (!isCrawl) {
+    const templateHeader = ['№', ...PRACTICE_COLUMNS];
+    const templateRows = [templateHeader];
+    lastPayload.items.forEach((it, i) => {
+      const row = new Array(templateHeader.length).fill('');
+      row[0] = i + 1;
+      row[4] = it.title || '';
+      row[6] = it.url || it.sourceURL || '';
+      templateRows.push(row);
+    });
+    const wsTemplate = XLSX.utils.aoa_to_sheet(templateRows);
+    wsTemplate['!cols'] = [{ wch: 4 }, ...PRACTICE_COLUMNS.map(() => ({ wch: 22 }))];
+    XLSX.utils.book_append_sheet(wb, wsTemplate, 'Практики_36_колонок');
+  }
 
   const infoRows = [
     ['Параметр', 'Значение'],
     ['Источник запроса', lastPayload.title || ''],
     ['Количество записей', lastPayload.items.length],
     ['С markdown', lastPayload.items.filter(i => i.markdown || i.content).length],
+    ['Номеров (уник.)', lastPayload.meta?.platesCount ?? ''],
+    ['Запросов API', lastPayload.meta?.queriesRun ?? ''],
+    ['Лимит страниц', lastPayload.meta?.limit ?? ''],
     ['Время ответа, мс', lastPayload.meta?.ms ?? ''],
-    ['Дата выгрузки', exportedAt]
+    ['Дата выгрузки', exportedAt],
+    ['Примечание', isCrawl ? 'Обход каталога через FireCrawl Crawl' : 'Колонки 1–36 заполняются вручную или через AI']
   ];
   const wsInfo = XLSX.utils.aoa_to_sheet(infoRows);
   wsInfo['!cols'] = [{ wch: 22 }, { wch: 60 }];
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Результаты');
   XLSX.utils.book_append_sheet(wb, wsInfo, 'Сводка');
 
   const safeName = (lastPayload.title || 'firecrawl')
@@ -592,6 +1229,10 @@ async function checkServer() {
 
 loadApiKey();
 checkServer();
+if (!localStorage.getItem('research_brief_seeded')) {
+  loadSvoTemplate(false);
+  localStorage.setItem('research_brief_seeded', '1');
+}
 </script>
 </body>
 </html>
