@@ -207,7 +207,7 @@
             <p class="hint" style="margin-bottom:.75rem">Длинное задание разбивается на серию коротких поисков (лимит FireCrawl — 500 символов на запрос). Результаты объединяются и дедupliцируются.</p>
             <div class="field">
               <label data-tip="Полный текст задания. Из него автоматически извлекутся ключевые слова в «кавычках».">Техническое задание</label>
-              <textarea id="researchBrief" class="tall" rows="12" placeholder="Вставьте полное задание…" data-tip="Можно вставить большой промпт — он разобьётся на серию коротких поисков."></textarea>
+              <textarea id="researchBrief" class="tall" rows="12" placeholder="Опишите цель исследования, тему, период, нужные разделы отчёта, ключевые слова в «кавычках»…" data-tip="Любая тема: HR, рынок, технологии, право и т.д. AI-анализ тоже строится из этого текста."></textarea>
             </div>
             <button type="button" class="btn-sm" id="btnLoadHrTemplate" style="margin-bottom:.75rem" data-tip="Подставит пример задания, ключевых слов и доменов для HR-исследования">Пример: HR</button>
             <button type="button" class="btn-sm" id="btnLoadSvoTemplate" style="margin-bottom:.75rem;margin-left:.35rem" data-tip="Подставит задание про практики трудоустройства ветеранов СВО">Шаблон: ветераны СВО</button>
@@ -233,11 +233,11 @@
             </div>
             <div class="field">
               <label data-tip="По одной фразе на строку. Авто-заполняется из «кавычек» в задании.">Ключевые слова (по одному на строку, авто из «кавычек»)</label>
-              <textarea id="researchKeywords" rows="6" data-tip="Каждая строка — отдельный поиск в Google через FireCrawl."></textarea>
+              <textarea id="researchKeywords" rows="6" placeholder="ключевое слово 1&#10;ключевое слово 2&#10;…" data-tip="Заполняется автоматически из «кавычек» в задании или вручную — по одному на строку."></textarea>
             </div>
             <div class="field">
               <label data-tip="Искать только на этих сайтах (опционально).">Домены (через пробел или запятую)</label>
-              <textarea id="researchDomains" rows="3" data-tip="Пример: consultant.ru mintrud.gov.ru — без https://"></textarea>
+              <textarea id="researchDomains" rows="3" placeholder="site1.ru site2.ru …" data-tip="Любые домены по теме исследования. Через пробел или запятую, без https://"></textarea>
             </div>
             <div class="checks">
               <label data-tip="Полный текст страниц. Медленнее, расходует больше кредитов."><input type="checkbox" id="researchScrape"> Загрузить markdown (медленнее, больше кредитов)</label>
@@ -255,14 +255,14 @@
         <div class="card" style="margin-top:1rem">
           <div class="card-head">Анализ и предложения ИИ</div>
           <div class="card-body">
-            <p class="hint" style="margin-bottom:.75rem">Доступно после исследования. ИИ прочитает собранные ссылки и тексты, сформирует сводку, выводы и рекомендации по вашему заданию.</p>
+            <p class="hint" style="margin-bottom:.75rem">Доступно после исследования. Промпт собирается из вашего «Технического задания» + собранных материалов — каждый запуск уникален по содержанию.</p>
             <div class="field">
               <label data-tip="Ключ OpenAI для GPT-4o-mini. Нужен только для AI-анализа, не для FireCrawl.">Ключ OpenAI (sk-…)</label>
               <input id="openaiKey" type="password" placeholder="sk-xxxxxxxx" autocomplete="off" data-tip="Получить: platform.openai.com → API keys. Или задайте OPENAI_API_KEY в server.py">
             </div>
             <div class="field">
               <label data-tip="Что именно должен проанализировать ИИ. По умолчанию — из поля «Техническое задание».">Фокус анализа (опционально)</label>
-              <textarea id="aiFocus" rows="4" placeholder="Например: практики трудоустройства ветеранов СВО, типовые HR-инструменты, переносимые модели…" data-tip="Дополните или уточните, на что обратить внимание в отчёте."></textarea>
+              <textarea id="aiFocus" rows="4" placeholder="Дополнительные акценты: на что обратить внимание, формат ответа, целевая аудитория отчёта…" data-tip="Необязательно. Если пусто — ИИ ориентируется только на «Техническое задание»."></textarea>
             </div>
             <div class="checks">
               <label data-tip="Включить фрагменты markdown из найденных страниц (точнее, но дольше)."><input type="checkbox" id="aiUseMarkdown" checked> Использовать тексты страниц</label>
@@ -550,31 +550,33 @@ function buildAiPrompt() {
   const focus = document.getElementById('aiFocus').value.trim();
   const useMd = document.getElementById('aiUseMarkdown').checked;
   const ctx = buildResearchContextForAi(useMd);
+  const keywords = [...new Set((lastPayload?.items || []).map(i => i.searchKeyword).filter(Boolean))];
 
   const userPrompt = `Техническое задание исследования:
 ${brief}
 
-${focus ? `Фокус анализа:\n${focus}\n\n` : ''}Собрано источников: ${ctx.total}. В анализ передано: ${ctx.used}.
-
-Материалы:
+${focus ? `Дополнительный фокус анализа:\n${focus}\n\n` : ''}Статистика сбора:
+- Всего источников: ${ctx.total}
+- Передано в анализ: ${ctx.used}
+${keywords.length ? `- Ключевые запросы: ${keywords.slice(0, 15).join('; ')}${keywords.length > 15 ? '…' : ''}\n` : ''}
+Материалы (заголовок, URL, фрагмент текста):
 ${ctx.text}
 
-Подготовь структурированный отчёт на русском языке:
-1. Краткая executive-сводка (5–7 предложений)
-2. 10 наиболее содержательных находок (с URL источников)
-3. Часто встречающиеся инструменты и подходы
-4. Типовая модель пути сотрудника (если есть в материалах)
-5. Роли HR, руководителя, наставника, куратора, семьи, сообщества
-6. Показатели эффективности из источников
-7. Три переносимые практики для крупной распределённой компании
-8. Влияние на корпоративную культуру
-9. Пробелы в данных и что искать дальше
-10. Конкретные рекомендации заказчику исследования
-
-Правила: не выдумывай факты; если данных нет — пиши «нет данных»; отделяй факты от планов; указывай ссылки на источники.`;
+Инструкция:
+1. Прочитай техническое задание — именно оно задаёт тему, цели и нужную структуру отчёта (HR, рынок, продукт, право и т.д.).
+2. Если в задании уже перечислены разделы, таблицы, KPI или вопросы — используй их как оглавление отчёта.
+3. Если структура не задана — предложи универсальную:
+   - краткая сводка;
+   - ключевые находки с URL;
+   - паттерны и противоречия;
+   - пробелы в данных;
+   - рекомендации и следующие шаги.
+4. Опирайся только на переданные материалы. Не выдумывай факты.
+5. Если данных нет — пиши «нет данных». Отделяй факты от планов и заявлений.
+6. Ответ — на русском, в markdown.`;
 
   return {
-    system: 'Ты эксперт по HR, корпоративным практикам и аналитике открытых данных. Отвечай только на русском, структурированно, в markdown.',
+    system: 'Ты аналитик открытых источников. Синтезируй материалы в отчёт строго по целям технического задания пользователя, без привязки к конкретной отрасли.',
     user: userPrompt
   };
 }
@@ -1626,10 +1628,6 @@ async function checkServer() {
 loadApiKey();
 loadOpenAiKey();
 checkServer();
-if (!localStorage.getItem('research_hr_seeded')) {
-  loadHrTemplate(false);
-  localStorage.setItem('research_hr_seeded', '1');
-}
 </script>
 </body>
 </html>
