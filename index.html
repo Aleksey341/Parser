@@ -34,11 +34,23 @@
     .wrap{max-width:1100px;margin:1rem auto 3rem;padding:0 1.5rem}
     .grid{display:grid;grid-template-columns:minmax(280px,380px) 1fr;gap:1.25rem;align-items:start}
     @media(max-width:900px){.grid{grid-template-columns:1fr}}
-    .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:visible}
     .card-head{padding:.85rem 1.15rem;border-bottom:1px solid var(--border);font-size:.75rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
     .card-body{padding:1.15rem}
     .field{margin-bottom:1rem}
     .field label{display:block;font-size:.78rem;color:var(--text-muted);margin-bottom:.35rem}
+    [data-tip]{position:relative;cursor:help}
+    [data-tip]::after{
+      content:attr(data-tip);position:absolute;left:0;bottom:calc(100% + 6px);z-index:30;
+      min-width:180px;max-width:280px;padding:.45rem .65rem;border-radius:6px;
+      background:#1e2636;border:1px solid rgba(249,115,22,.35);color:#e8eaef;
+      font-size:.72rem;line-height:1.45;font-weight:400;letter-spacing:normal;text-transform:none;
+      white-space:normal;box-shadow:0 8px 24px rgba(0,0,0,.35);pointer-events:none;opacity:0;
+      transform:translateY(4px);transition:opacity .15s,transform .15s
+    }
+    [data-tip]:hover::after,[data-tip]:focus-visible::after{opacity:1;transform:translateY(0)}
+    .checks [data-tip]::after,.btn-run[data-tip]::after,.btn-sm[data-tip]::after,.tab-btn[data-tip]::after{left:auto;right:0}
+    .field-row .field [data-tip]::after{max-width:220px}
     .field input,.field textarea,.field select{width:100%;font-family:var(--font);font-size:.88rem;padding:.6rem .75rem;background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text)}
     .field textarea{min-height:72px;resize:vertical;font-family:var(--mono);font-size:.8rem}
     .field textarea.tall{min-height:220px}
@@ -47,6 +59,7 @@
     .field-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
     .checks{display:flex;flex-wrap:wrap;gap:.75rem 1rem;margin:.25rem 0 .75rem;font-size:.84rem;color:var(--text-muted)}
     .checks label{display:flex;align-items:center;gap:.4rem;cursor:pointer}
+    .checks label[data-tip]{cursor:help}
     .checks input{width:auto}
     .hint{font-size:.75rem;color:var(--text-muted);margin-top:.35rem}
     .btn-run{width:100%;margin-top:.35rem;font-family:var(--font);font-size:.9rem;font-weight:600;padding:.75rem;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);cursor:pointer}
@@ -62,6 +75,10 @@
     .result-actions{display:flex;gap:.4rem;flex-wrap:wrap}
     .btn-sm{font-family:var(--font);font-size:.75rem;padding:.35rem .7rem;background:transparent;border:1px solid var(--border);color:var(--text-muted);border-radius:6px;cursor:pointer}
     .btn-sm:hover{border-color:var(--accent);color:var(--accent)}
+    .btn-sm.flash-ok{border-color:var(--success);color:var(--success)}
+    .export-hint{font-size:.72rem;color:var(--text-muted);padding:0 1.15rem .65rem}
+    .toast{position:fixed;bottom:1.25rem;right:1.25rem;z-index:100;background:#1a2332;border:1px solid rgba(34,197,94,.45);color:#bbf7d0;padding:.65rem 1rem;border-radius:8px;font-size:.82rem;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none;max-width:320px}
+    .toast.visible{opacity:1;transform:translateY(0)}
     .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;padding:1rem 1.15rem;border-bottom:1px solid var(--border)}
     @media(max-width:700px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
     .kpi{text-align:center;padding:.55rem;background:var(--bg-input);border-radius:6px}
@@ -103,14 +120,14 @@
 <section class="hero">
   <span class="hero-badge">Search · Scrape · Markdown</span>
   <h1>Поиск информации в интернете и парсинг страниц</h1>
-  <p class="hero-lead" id="heroLead">Откройте по ссылке GitHub Pages — скачивание не нужно. Введите API-ключ FireCrawl, выполните поиск или парсинг URL и сохраните результат в Excel.</p>
+  <p class="hero-lead" id="heroLead">Откройте по ссылке GitHub Pages — скачивание не нужно. Введите API-ключ FireCrawl, выполните поиск или парсинг URL и сохраните результат в Excel. <span style="opacity:.85">Наведите курсор на любое поле или кнопку — появится подсказка.</span></p>
 </section>
 
 <nav class="tabs">
-  <button class="tab-btn active" data-tab="search">🔍 Поиск</button>
-  <button class="tab-btn" data-tab="research">📋 Исследование</button>
-  <button class="tab-btn" data-tab="crawl">🕸 Обход каталога</button>
-  <button class="tab-btn" data-tab="scrape">📄 Парсинг URL</button>
+  <button class="tab-btn active" data-tab="search" data-tip="Поиск страниц в Google по ключевым словам">🔍 Поиск</button>
+  <button class="tab-btn" data-tab="research" data-tip="Длинное задание → много коротких поисков">📋 Исследование</button>
+  <button class="tab-btn" data-tab="crawl" data-tip="Обход всего каталога сайта по ссылкам">🕸 Обход каталога</button>
+  <button class="tab-btn" data-tab="scrape" data-tip="Скачать текст одной конкретной страницы">📄 Парсинг URL</button>
 </nav>
 
 <div class="wrap">
@@ -120,8 +137,8 @@
         <div class="card-head">API-ключ FireCrawl</div>
         <div class="card-body">
           <div class="field">
-            <label>Ключ (fc-…)</label>
-            <input id="apiKey" type="password" placeholder="fc-xxxxxxxx" autocomplete="off">
+            <label data-tip="Пароль от FireCrawl. Без него запросы не отправятся. Сохраняется только у вас в браузере.">Ключ (fc-…)</label>
+            <input id="apiKey" type="password" placeholder="fc-xxxxxxxx" autocomplete="off" data-tip="Вставьте ключ fc-… с сайта firecrawl.dev → API Keys">
             <p class="hint">Сохраняется только в браузере. Получить ключ: <a href="https://www.firecrawl.dev/app/api-keys" target="_blank" rel="noopener">firecrawl.dev</a></p>
           </div>
         </div>
@@ -132,14 +149,14 @@
           <div class="card-head">Параметры поиска</div>
           <div class="card-body">
             <div class="field">
-              <label>Запрос</label>
-              <textarea id="searchQuery" rows="3" placeholder="Короткий запрос, до 500 символов. Например: программа трудоустройства ветеранов СВО"></textarea>
+              <label data-tip="Ищет страницы в интернете, как Google. Только ключевые слова, до 500 символов.">Запрос</label>
+              <textarea id="searchQuery" rows="3" placeholder="Короткий запрос, до 500 символов. Например: программа трудоустройства ветеранов СВО" data-tip="Пример: «автономера купить Москва». Не пишите инструкции — для них вкладка «Исследование»."></textarea>
               <p class="hint">Это веб-поиск по ключевым словам, не анализ текста. Длинные инструкции и таблицы сюда не подходят — используйте 5–15 слов.</p>
             </div>
             <div class="field-row">
               <div class="field">
-                <label>Кол-во результатов</label>
-                <select id="searchLimit">
+                <label data-tip="Сколько ссылок вернуть из поиска (макс. 100).">Кол-во результатов</label>
+                <select id="searchLimit" data-tip="Больше результатов = больше кредитов FireCrawl.">
                   <option value="5">5</option>
                   <option value="10" selected>10</option>
                   <option value="20">20</option>
@@ -148,8 +165,8 @@
                 </select>
               </div>
               <div class="field">
-                <label>Язык / регион</label>
-                <select id="searchLang">
+                <label data-tip="Язык результатов поиска. ru — для русскоязычных сайтов.">Язык / регион</label>
+                <select id="searchLang" data-tip="Влияет на выдачу Google: регион и язык сниппетов.">
                   <option value="">авто</option>
                   <option value="ru" selected>ru</option>
                   <option value="en">en</option>
@@ -157,16 +174,16 @@
               </div>
             </div>
             <div class="checks">
-              <label><input type="checkbox" id="searchScrape" checked> Загрузить полный текст (markdown)</label>
-              <label><input type="checkbox" id="srcWeb" checked> Web</label>
-              <label><input type="checkbox" id="srcNews"> News</label>
+              <label data-tip="Скачает полный текст каждой найденной страницы. Дороже, но можно сразу читать и экспортировать."><input type="checkbox" id="searchScrape" checked> Загрузить полный текст (markdown)</label>
+              <label data-tip="Обычные веб-страницы в результатах поиска."><input type="checkbox" id="srcWeb" checked> Web</label>
+              <label data-tip="Новостные статьи (отдельная лента Google News)."><input type="checkbox" id="srcNews"> News</label>
             </div>
             <div class="field">
-              <label>Только домены (через запятую, опционально)</label>
-              <input id="includeDomains" placeholder="consultant.ru, normativ.kontur.ru">
+              <label data-tip="Ограничить поиск только указанными сайтами.">Только домены (через запятую, опционально)</label>
+              <input id="includeDomains" placeholder="consultant.ru, normativ.kontur.ru" data-tip="Только эти сайты в выдаче. Через запятую или пробел, без https://">
               <p class="hint">Через запятую или пробел. Без https://</p>
             </div>
-            <button class="btn-run" id="btnSearch">▶ Найти и распарсить</button>
+            <button class="btn-run" id="btnSearch" data-tip="Отправит поиск в FireCrawl → результаты появятся справа → экспорт в Excel/MD">▶ Найти и распарсить</button>
           </div>
           <div class="loader" id="loader-search"></div>
         </div>
@@ -178,14 +195,14 @@
           <div class="card-body">
             <p class="hint" style="margin-bottom:.75rem">Длинное задание разбивается на серию коротких поисков (лимит FireCrawl — 500 символов на запрос). Результаты объединяются и дедupliцируются.</p>
             <div class="field">
-              <label>Техническое задание</label>
-              <textarea id="researchBrief" class="tall" rows="12" placeholder="Вставьте полное задание…"></textarea>
+              <label data-tip="Полный текст задания. Из него автоматически извлекутся ключевые слова в «кавычках».">Техническое задание</label>
+              <textarea id="researchBrief" class="tall" rows="12" placeholder="Вставьте полное задание…" data-tip="Можно вставить большой промпт — он разобьётся на серию коротких поисков."></textarea>
             </div>
-            <button type="button" class="btn-sm" id="btnLoadSvoTemplate" style="margin-bottom:.75rem">Загрузить шаблон: ветераны СВО</button>
+            <button type="button" class="btn-sm" id="btnLoadSvoTemplate" style="margin-bottom:.75rem" data-tip="Подставит готовое задание про практики трудоустройства ветеранов СВО">Загрузить шаблон: ветераны СВО</button>
             <div class="field-row">
               <div class="field">
-                <label>Результатов на запрос</label>
-                <select id="researchLimit">
+                <label data-tip="Сколько ссылок собирать за один ключевой запрос.">Результатов на запрос</label>
+                <select id="researchLimit" data-tip="Например: 20 × 15 запросов = до 300 ссылок (с дедupliкацией).">
                   <option value="10">10</option>
                   <option value="20" selected>20</option>
                   <option value="50">50</option>
@@ -193,8 +210,8 @@
                 </select>
               </div>
               <div class="field">
-                <label>Ключевых запросов (макс.)</label>
-                <select id="researchMaxQueries">
+                <label data-tip="Сколько ключевых фраз использовать из списка ниже.">Ключевых запросов (макс.)</label>
+                <select id="researchMaxQueries" data-tip="Каждый запрос = отдельный вызов API. Больше = дольше и дороже.">
                   <option value="8">8</option>
                   <option value="15" selected>15</option>
                   <option value="20">20</option>
@@ -203,19 +220,19 @@
               </div>
             </div>
             <div class="field">
-              <label>Ключевые слова (по одному на строку, авто из «кавычек»)</label>
-              <textarea id="researchKeywords" rows="6"></textarea>
+              <label data-tip="По одной фразе на строку. Авто-заполняется из «кавычек» в задании.">Ключевые слова (по одному на строку, авто из «кавычек»)</label>
+              <textarea id="researchKeywords" rows="6" data-tip="Каждая строка — отдельный поиск в Google через FireCrawl."></textarea>
             </div>
             <div class="field">
-              <label>Домены (через пробел или запятую)</label>
-              <textarea id="researchDomains" rows="3"></textarea>
+              <label data-tip="Искать только на этих сайтах (опционально).">Домены (через пробел или запятую)</label>
+              <textarea id="researchDomains" rows="3" data-tip="Пример: consultant.ru mintrud.gov.ru — без https://"></textarea>
             </div>
             <div class="checks">
-              <label><input type="checkbox" id="researchScrape"> Загрузить markdown (медленнее, больше кредитов)</label>
-              <label><input type="checkbox" id="researchDateFilter" checked> Публикации с 01.01.2023</label>
-              <label><input type="checkbox" id="researchBroad" checked> Доп. поиск без фильтра доменов</label>
+              <label data-tip="Полный текст страниц. Медленнее, расходует больше кредитов."><input type="checkbox" id="researchScrape"> Загрузить markdown (медленнее, больше кредитов)</label>
+              <label data-tip="Только материалы не старше 1 января 2023 года."><input type="checkbox" id="researchDateFilter" checked> Публикации с 01.01.2023</label>
+              <label data-tip="Дополнительно ищет по всему интернету, не только по указанным доменам."><input type="checkbox" id="researchBroad" checked> Доп. поиск без фильтра доменов</label>
             </div>
-            <button class="btn-run" id="btnResearch">▶ Запустить исследование</button>
+            <button class="btn-run" id="btnResearch" data-tip="Запустит серию поисков → объединит ссылки → покажет справа">▶ Запустить исследование</button>
           </div>
           <div class="progress-line" id="researchProgress"></div>
           <div class="loader" id="loader-research"></div>
@@ -227,15 +244,15 @@
           <div class="card-head">Обход каталога сайта</div>
           <div class="card-body">
             <p class="hint" style="margin-bottom:.75rem">Обходит страницы сайта по ссылкам (FireCrawl Crawl). Подходит для каталогов объявлений, номеров, товаров. 1 страница ≈ 1 кредит.</p>
-            <button type="button" class="btn-sm" id="btnCrawlPresetAuto" style="margin-bottom:.75rem">Шаблон: auto-nomera.ru</button>
+            <button type="button" class="btn-sm" id="btnCrawlPresetAuto" style="margin-bottom:.75rem" data-tip="Заполнит URL и настройки для сайта auto-nomera.ru">Шаблон: auto-nomera.ru</button>
             <div class="field">
-              <label>URL каталога</label>
-              <input id="crawlUrl" type="url" placeholder="https://auto-nomera.ru/">
+              <label data-tip="С какой страницы начать обход — обычно главная или каталог.">URL каталога</label>
+              <input id="crawlUrl" type="url" placeholder="https://auto-nomera.ru/" data-tip="FireCrawl пойдёт по ссылкам с этой страницы. Для номеров: auto-nomera.ru">
             </div>
             <div class="field-row">
               <div class="field">
-                <label>Макс. страниц</label>
-                <select id="crawlLimit">
+                <label data-tip="Сколько страниц максимум скачать. 1 страница = 1 кредит.">Макс. страниц</label>
+                <select id="crawlLimit" data-tip="Начните с 25–50. Для полного каталога — 100–200.">
                   <option value="10">10</option>
                   <option value="25">25</option>
                   <option value="50" selected>50</option>
@@ -245,8 +262,8 @@
                 </select>
               </div>
               <div class="field">
-                <label>Глубина ссылок</label>
-                <select id="crawlDepth">
+                <label data-tip="Сколько «кликов» от стартовой страницы идти по ссылкам.">Глубина ссылок</label>
+                <select id="crawlDepth" data-tip="Больше глубина — больше страниц найдётся, но дольше обход.">
                   <option value="2">2</option>
                   <option value="3" selected>3</option>
                   <option value="5">5</option>
@@ -255,19 +272,19 @@
               </div>
             </div>
             <div class="field">
-              <label>Включить только пути (regex, по одному на строку, опционально)</label>
-              <textarea id="crawlIncludePaths" rows="2" placeholder="^/sale/.*&#10;^/auto/.*"></textarea>
+              <label data-tip="Regex-пути URL, которые нужно обойти. Пусто = все страницы.">Включить только пути (regex, по одному на строку, опционально)</label>
+              <textarea id="crawlIncludePaths" rows="2" placeholder="^/sale/.*&#10;^/auto/.*" data-tip="Пример: ^/auto/.* — только страницы каталога авто"></textarea>
             </div>
             <div class="field">
-              <label>Исключить пути (regex, опционально)</label>
-              <textarea id="crawlExcludePaths" rows="2" placeholder="^/admin/.*&#10;^/login.*"></textarea>
+              <label data-tip="Regex-пути, которые пропустить (логин, админка и т.д.).">Исключить пути (regex, опционально)</label>
+              <textarea id="crawlExcludePaths" rows="2" placeholder="^/admin/.*&#10;^/login.*" data-tip="Пример: ^/login.* — не заходить на страницу входа"></textarea>
             </div>
             <div class="checks">
-              <label><input type="checkbox" id="crawlEntireDomain" checked> Весь домен (не только подпапки)</label>
-              <label><input type="checkbox" id="crawlScrape" checked> Markdown каждой страницы</label>
-              <label><input type="checkbox" id="crawlExtractPlates" checked> Извлекать госномера в Excel</label>
+              <label data-tip="Обходить весь сайт, а не только ссылки ниже стартовой страницы."><input type="checkbox" id="crawlEntireDomain" checked> Весь домен (не только подпапки)</label>
+              <label data-tip="Сохранить текст каждой страницы — нужно для MD и Excel."><input type="checkbox" id="crawlScrape" checked> Markdown каждой страницы</label>
+              <label data-tip="Найдёт госномера в тексте и вынесет на отдельный лист Excel «Номера»."><input type="checkbox" id="crawlExtractPlates" checked> Извлекать госномера в Excel</label>
             </div>
-            <button class="btn-run" id="btnCrawl">▶ Обойти каталог</button>
+            <button class="btn-run" id="btnCrawl" data-tip="Запустит обход → подождите 1–10 мин → номера в Excel на листе «Номера»">▶ Обойти каталог</button>
           </div>
           <div class="progress-line" id="crawlProgress"></div>
           <div class="loader" id="loader-crawl"></div>
@@ -279,15 +296,15 @@
           <div class="card-head">Парсинг одной страницы</div>
           <div class="card-body">
             <div class="field">
-              <label>URL</label>
-              <input id="scrapeUrl" type="url" placeholder="https://example.com/page">
+              <label data-tip="Полный адрес одной страницы для скачивания.">URL</label>
+              <input id="scrapeUrl" type="url" placeholder="https://example.com/page" data-tip="Одна ссылка = одна страница. Для всего каталога — вкладка «Обход каталога».">
             </div>
             <div class="checks">
-              <label><input type="checkbox" id="fmtMarkdown" checked> Markdown</label>
-              <label><input type="checkbox" id="fmtLinks"> Ссылки</label>
-              <label><input type="checkbox" id="fmtHtml"> HTML</label>
+              <label data-tip="Чистый текст страницы — удобно читать и экспортировать."><input type="checkbox" id="fmtMarkdown" checked> Markdown</label>
+              <label data-tip="Список всех ссылок со страницы."><input type="checkbox" id="fmtLinks"> Ссылки</label>
+              <label data-tip="Исходный HTML-код страницы."><input type="checkbox" id="fmtHtml"> HTML</label>
             </div>
-            <button class="btn-run" id="btnScrape">▶ Распарсить страницу</button>
+            <button class="btn-run" id="btnScrape" data-tip="Скачает одну страницу → результат справа → Excel или MD">▶ Распарсить страницу</button>
           </div>
           <div class="loader" id="loader-scrape"></div>
         </div>
@@ -303,11 +320,12 @@
         <div class="result-head">
           <span class="result-title" id="resultsTitle">Результаты</span>
           <div class="result-actions">
-            <button class="btn-sm" id="btnCopyJson">JSON</button>
-            <button class="btn-sm" id="btnCopyMd">Markdown</button>
-            <button class="btn-sm primary" id="btnExportExcel">Excel</button>
+            <button class="btn-sm" id="btnCopyJson" data-tip="Скопирует все результаты в буфер обмена в формате JSON">JSON</button>
+            <button class="btn-sm" id="btnCopyMd" data-tip="Скачает один .md файл со всеми страницами">Скачать MD</button>
+            <button class="btn-sm" id="btnExportExcel" data-tip="Сохранит таблицу .xlsx (для обхода — лист «Номера»)">Excel</button>
           </div>
         </div>
+        <p class="export-hint">Скачать MD — файл с текстом · JSON — копия в буфер · Excel — таблица с номерами</p>
         <div class="kpi-row" id="kpiRow"></div>
         <div class="error-box" id="errorBox"></div>
         <div class="results-list" id="resultsList"></div>
@@ -315,6 +333,8 @@
     </div>
   </div>
 </div>
+
+<div class="toast" id="toast" role="status"></div>
 
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script>
@@ -1090,15 +1110,70 @@ document.getElementById('btnLoadSvoTemplate').addEventListener('click', () => lo
 document.getElementById('btnScrape').addEventListener('click', doScrape);
 document.getElementById('apiKey').addEventListener('change', saveApiKey);
 
-document.getElementById('btnCopyJson').addEventListener('click', () => {
-  if (!lastPayload) return;
-  navigator.clipboard.writeText(JSON.stringify(lastPayload, null, 2));
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('visible'), 2800);
+}
+
+function flashButton(btn) {
+  btn.classList.add('flash-ok');
+  setTimeout(() => btn.classList.remove('flash-ok'), 1200);
+}
+
+function buildMarkdownExport() {
+  if (!lastPayload?.items?.length) return '';
+  return lastPayload.items.map((it, i) =>
+    `# ${i + 1}. ${it.title || it.url || 'Без названия'}\n${it.url || it.sourceURL || ''}\n\n${it.markdown || it.content || it.description || '_нет текста_'}`
+  ).join('\n\n---\n\n');
+}
+
+function downloadTextFile(content, filename) {
+  const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+document.getElementById('btnCopyJson').addEventListener('click', async () => {
+  if (!lastPayload?.items?.length) {
+    showToast('Нет данных — сначала выполните поиск или обход');
+    return;
+  }
+  const btn = document.getElementById('btnCopyJson');
+  try {
+    await navigator.clipboard.writeText(JSON.stringify(lastPayload, null, 2));
+    flashButton(btn);
+    showToast('JSON скопирован в буфер обмена');
+  } catch {
+    showToast('Не удалось скопировать — разрешите доступ к буферу');
+  }
 });
 
 document.getElementById('btnCopyMd').addEventListener('click', () => {
-  if (!lastPayload) return;
-  const md = lastPayload.items.map((it, i) => `# ${i + 1}. ${it.title || it.url}\n${it.url || ''}\n\n${it.markdown || it.description || ''}`).join('\n\n---\n\n');
-  navigator.clipboard.writeText(md);
+  if (!lastPayload?.items?.length) {
+    showToast('Нет данных — сначала выполните поиск или обход');
+    return;
+  }
+  const md = buildMarkdownExport();
+  const hasText = lastPayload.items.some(i => String(i.markdown || i.content || '').trim().length > 0);
+  if (!hasText) {
+    showToast('Markdown пуст — включите «Markdown каждой страницы» при обходе');
+    return;
+  }
+  const safeName = (lastPayload.title || 'firecrawl')
+    .replace(/[\\/:*?"<>|]/g, '_')
+    .slice(0, 40);
+  downloadTextFile(md, `${safeName}_${new Date().toISOString().slice(0, 10)}.md`);
+  flashButton(document.getElementById('btnCopyMd'));
+  showToast(`Файл .md скачан (${lastPayload.items.length} стр.)`);
 });
 
 function cellText(value, max = 32000) {
@@ -1200,6 +1275,8 @@ function exportToExcel() {
     .slice(0, 40);
   const fileName = `${safeName}_${new Date().toISOString().slice(0, 10)}.xlsx`;
   XLSX.writeFile(wb, fileName);
+  flashButton(document.getElementById('btnExportExcel'));
+  showToast(`Excel сохранён: ${fileName}`);
 }
 
 document.getElementById('btnExportExcel').addEventListener('click', exportToExcel);
