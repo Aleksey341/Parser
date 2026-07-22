@@ -1,31 +1,20 @@
-# FireCrawl Parser
+# Firecrawl Parser
 
-HTML-интерфейс для **поиска в интернете** и **парсинга страниц** через [FireCrawl API](https://www.firecrawl.dev/).
+Инструмент для **поиска в интернете**, **пакетного исследования**, **обхода каталогов** и **AI-анализа** собранных материалов.
 
-## Использовать по ссылке (без скачивания)
+## Онлайн (GitHub Pages)
 
-1. Включите **GitHub Pages** в репозитории:
-   - **Settings** → **Pages**
-   - **Source:** Deploy from a branch
-   - **Branch:** `main` → папка **`/docs`**
-   - **Save**
+**https://aleksey341.github.io/Parser/**
 
-2. Через 1–2 минуты откройте:
+1. Введите полученный API-ключ.
+2. Вкладка **«Исследование»** → сформируйте запросы → запустите сбор.
+3. Экспорт в **Excel** / **Markdown**, затем **AI-анализ**.
 
-   **`https://ВАШ-ЛОГИН.github.io/firecrawl-parser/`**
-
-   Пример: `https://github.com/Aleksey341/firecrawl-parser` →  
-   `https://aleksey341.github.io/firecrawl-parser/`
-
-3. Вставьте **API-ключ FireCrawl** (поле слева).
-
-4. Выполните поиск или парсинг URL → кнопка **Excel** для сохранения.
-
-> Скачивание и Python **не нужны** — всё работает в браузере по ссылке.
+> Python не нужен — работает в браузере. Ключи по умолчанию **не сохраняются** в `localStorage`.
 
 ---
 
-## Локальный запуск (опционально)
+## Локальный запуск
 
 ```bash
 pip install -r requirements.txt
@@ -34,32 +23,39 @@ python server.py
 
 Откройте: http://127.0.0.1:8765/
 
----
-
-## API-ключ
-
-Получить: https://www.firecrawl.dev/app/api-keys
-
-- В онлайн-режиме — вводите в форму (хранится только в браузере)
-- Локально — можно задать `FIRECRAWL_API_KEY` в окружении
-
-**Не коммитьте ключ в git.**
+Переменные окружения — см. `.env.example`.
 
 ---
 
-## Экспорт в Excel
+## Сборка GitHub Pages
 
-Кнопка **Excel** → файл с листами **Результаты** и **Сводка**.
+```bash
+python scripts/build_static.py
+```
+
+Публикуется содержимое папки `docs/` (генерируется из `templates/` + `static/`).
 
 ---
 
-## Структура
+## Структура проекта
 
-| Файл | Назначение |
-|------|------------|
-| `docs/index.html` | Версия для GitHub Pages |
-| `firecrawl_parser.html` | Копия для локального сервера |
-| `server.py` | Локальный прокси (search, scrape, crawl) |
+```
+Parser/
+├── app/                 # Flask-приложение, валидация, клиенты API
+├── static/              # CSS и JS-модули
+├── templates/           # Единый HTML-шаблон
+├── tests/               # pytest
+├── scripts/build_static.py
+├── docs/                # GitHub Pages (генерируется)
+├── server.py
+└── README.md
+```
+
+---
+
+## Безопасность
+
+См. [SECURITY.md](SECURITY.md).
 
 ---
 
