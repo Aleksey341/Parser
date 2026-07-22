@@ -54,7 +54,7 @@ def _firecrawl_post(path: str, body: dict, api_key: str) -> tuple[dict, int]:
             err = {"error": raw or exc.reason}
         return err, exc.code
     except urllib.error.URLError as exc:
-        return {"error": f"Не удалось связаться с FireCrawl: {exc.reason}"}, 502
+        return {"error": f"Не удалось связаться с API: {exc.reason}"}, 502
 
 
 def _firecrawl_get(url: str, api_key: str) -> tuple[dict, int]:
@@ -73,7 +73,7 @@ def _firecrawl_get(url: str, api_key: str) -> tuple[dict, int]:
             err = {"error": raw or exc.reason}
         return err, exc.code
     except urllib.error.URLError as exc:
-        return {"error": f"Не удалось связаться с FireCrawl: {exc.reason}"}, 502
+        return {"error": f"Не удалось связаться с API: {exc.reason}"}, 502
 
 
 def _build_crawl_body(payload: dict) -> dict:
