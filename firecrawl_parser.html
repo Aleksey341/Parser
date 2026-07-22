@@ -236,17 +236,19 @@
               </div>
               <div class="field">
                 <label data-tip="Сколько ключевых фраз использовать из списка ниже.">Ключевых запросов (макс.)</label>
-                <select id="researchMaxQueries" data-tip="Каждый запрос = отдельный вызов API. Больше = дольше и дороже.">
+                <select id="researchMaxQueries" data-tip="Сколько строк из списка «Ключевые слова» отправить в поиск. «Все» — каждая строка.">
                   <option value="8">8</option>
-                  <option value="15" selected>15</option>
+                  <option value="15">15</option>
                   <option value="20">20</option>
                   <option value="30">30</option>
+                  <option value="9999" selected>Все из списка</option>
                 </select>
               </div>
             </div>
             <div class="field">
-              <label data-tip="По одной фразе на строку. Авто-заполняется из «кавычек» в задании.">Ключевые слова (по одному на строку, авто из «кавычек»)</label>
-              <textarea id="researchKeywords" rows="6" placeholder="ключевое слово 1&#10;ключевое слово 2&#10;…" data-tip="Заполняется автоматически из «кавычек» в задании или вручную — по одному на строку."></textarea>
+              <label data-tip="По одной фразе на строку. Редактируйте вручную или подтяните из «кавычек» в задании.">Ключевые слова (по одному на строку)</label>
+              <textarea id="researchKeywords" rows="6" placeholder="ключевое слово 1&#10;ключевое слово 2&#10;…" data-tip="При запуске используется этот список как есть. Кнопка «Из задания» — только по запросу."></textarea>
+              <button type="button" class="btn-sm" id="btnParseBriefFields" style="margin-top:.4rem" data-tip="Извлечёт фразы в «кавычках» и домены из текста задания">↻ Из задания</button>
             </div>
             <div class="field">
               <label data-tip="Искать только на этих сайтах (опционально).">Домены (через пробел или запятую)</label>
@@ -258,7 +260,7 @@
                 <label><input type="checkbox" id="researchDateFilter" checked> Публикации с</label>
                 <input type="date" id="researchDateFrom" value="2023-01-01" max="">
               </div>
-              <label data-tip="Дополнительно ищет по всему интернету, не только по указанным доменам."><input type="checkbox" id="researchBroad" checked> Доп. поиск без фильтра доменов</label>
+              <label data-tip="Если включено при указанных доменах — добавляет второй проход по всему интернету (результаты с других сайтов)."><input type="checkbox" id="researchBroad"> Доп. поиск без фильтра доменов</label>
             </div>
             <button class="btn-run" id="btnResearch" data-tip="Запустит серию поисков → объединит ссылки → покажет справа">▶ Запустить исследование</button>
           </div>
@@ -1186,13 +1188,56 @@ function extractDomainsFromBrief(text) {
   return [...found];
 }
 
-function parseBriefFields() {
+function parseBriefFields(force = true) {
   const brief = document.getElementById('researchBrief').value;
+  const kwEl = document.getElementById('researchKeywords');
+  const domEl = document.getElementById('researchDomains');
   const keywords = extractKeywordsFromBrief(brief);
   const domains = extractDomainsFromBrief(brief);
-  document.getElementById('researchKeywords').value = keywords.join('\n');
-  document.getElementById('researchDomains').value = domains.join(' ');
+
+  if (force || !kwEl.value.trim()) {
+    if (keywords.length) kwEl.value = keywords.join('\n');
+  }
+  if (force || !domEl.value.trim()) {
+    if (domains.length) domEl.value = domains.join(' ');
+  }
   return { keywords, domains };
+}
+
+function urlMatchesDomains(url, domains) {
+  if (!url || !domains.length) return true;
+  try {
+    const host = new URL(String(url).startsWith('http') ? url : `https://${url}`).hostname.toLowerCase();
+    return domains.some(d => {
+      const dom = d.toLowerCase();
+      return host === dom || host.endsWith(`.${dom}`);
+    });
+  } catch {
+    return false;
+  }
+}
+
+function buildResearchJobs(keywords, domains, broad) {
+  const jobs = [];
+  for (const kw of keywords) {
+    if (domains.length) {
+      jobs.push({
+        query: kw,
+        includeDomains: domains,
+        label: `${kw} [${domains.slice(0, 3).join(', ')}${domains.length > 3 ? '…' : ''}]`,
+        domainOnly: true
+      });
+    }
+    if (broad || !domains.length) {
+      jobs.push({
+        query: kw,
+        includeDomains: [],
+        label: domains.length ? `${kw} (весь web)` : kw,
+        domainOnly: false
+      });
+    }
+  }
+  return jobs;
 }
 
 function itemUrlKey(it) {
@@ -1251,7 +1296,6 @@ async function doResearch() {
     return;
   }
 
-  parseBriefFields();
   const keywords = document.getElementById('researchKeywords').value
     .split(/\n+/).map(s => s.trim()).filter(Boolean);
   const domains = parseDomainsInput(document.getElementById('researchDomains').value);
@@ -1263,21 +1307,27 @@ async function doResearch() {
   const broad = document.getElementById('researchBroad').checked;
 
   if (!keywords.length) {
-    alert('Не найдены ключевые слова. Нажмите «Пример: …» или добавьте слова в список.');
+    alert('Не найдены ключевые слова. Заполните список, нажмите «Из задания» или «Пример: …».');
     return;
   }
 
+  const kwSlice = maxQueries >= keywords.length ? keywords : keywords.slice(0, maxQueries);
+  const jobs = buildResearchJobs(kwSlice, domains, broad);
+
+  if (!jobs.length) {
+    alert('Нет запросов для запуска. Добавьте ключевые слова или домены.');
+    return;
+  }
+
+  if (domains.length && broad) {
+    const ok = confirm(
+      `Включён «Доп. поиск без фильтра доменов» — часть результатов будет с других сайтов, не только: ${domains.slice(0, 5).join(', ')}${domains.length > 5 ? '…' : ''}.\n\nПродолжить?`
+    );
+    if (!ok) return;
+  }
   const btn = document.getElementById('btnResearch');
   btn.disabled = true;
   hideError();
-
-  const jobs = [];
-  const kwSlice = keywords.slice(0, maxQueries);
-  for (const kw of kwSlice) {
-    if (domains.length) jobs.push({ query: kw, includeDomains: domains, label: kw });
-    if (broad) jobs.push({ query: kw, includeDomains: [], label: `${kw} (весь web)` });
-  }
-
   const allItems = [];
   let queriesRun = 0;
   let errors = 0;
@@ -1299,7 +1349,11 @@ async function doResearch() {
           };
           if (job.includeDomains.length) body.includeDomains = job.includeDomains;
           const json = await firecrawlRequest('search', body);
-          mergeSearchItems(allItems, normalizeItems(json.data), job.label);
+          let items = normalizeItems(json.data);
+          if (job.domainOnly && job.includeDomains.length) {
+            items = items.filter(it => urlMatchesDomains(it.url || it.sourceURL, job.includeDomains));
+          }
+          mergeSearchItems(allItems, items, job.label);
           queriesRun++;
         } catch (e) {
           errors++;
@@ -1308,12 +1362,15 @@ async function doResearch() {
         if (i < jobs.length - 1) await new Promise(r => setTimeout(r, 400));
       }
 
-      renderResults(`Исследование: ${kwSlice.length} ключевых слов`, allItems, {
+      renderResults(`Исследование: ${kwSlice.length} из ${keywords.length} ключевых слов`, allItems, {
         ms: Math.round(performance.now() - t0),
         queriesRun,
         errors,
         limit,
         mode: 'research',
+        keywordsUsed: kwSlice.length,
+        keywordsTotal: keywords.length,
+        domains: domains.length ? domains.join(', ') : 'весь web',
         researchBrief: document.getElementById('researchBrief').value.trim()
       });
 
@@ -1344,7 +1401,7 @@ function loadHrTemplate(switchTab = false) {
 
 function loadSvoTemplate(switchTab = true) {
   document.getElementById('researchBrief').value = SVO_RESEARCH_BRIEF;
-  parseBriefFields();
+  parseBriefFields(true);
   if (switchTab) document.querySelector('[data-tab="research"]').click();
 }
 
@@ -1461,6 +1518,12 @@ document.getElementById('btnCrawl').addEventListener('click', doCrawl);
 document.getElementById('btnCrawlPresetAuto').addEventListener('click', loadCrawlPresetAuto);
 document.getElementById('btnLoadHrTemplate').addEventListener('click', () => loadHrTemplate(true));
 document.getElementById('btnLoadSvoTemplate').addEventListener('click', () => loadSvoTemplate(true));
+document.getElementById('btnParseBriefFields').addEventListener('click', () => {
+  const { keywords, domains } = parseBriefFields(true);
+  if (!keywords.length && !domains.length) {
+    alert('В задании не найдены фразы в «кавычках» или домены. Добавьте их вручную в списки ниже.');
+  }
+});
 document.getElementById('btnScrape').addEventListener('click', doScrape);
 document.getElementById('apiKey').addEventListener('change', saveApiKey);
 

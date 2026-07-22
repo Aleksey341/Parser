@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Поиск и парсинг</title>
+  <title>FireCrawl — поиск и парсинг</title>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -121,7 +121,7 @@
 <body>
 
 <header class="topbar">
-  <div class="topbar-brand"><span>Парсер</div>
+  <div class="topbar-brand"><span>FireCrawl</span> · парсер</div>
   <div class="topbar-meta">
     <span id="serverStatus"><span class="dot"></span>Сервер…</span>
   </div>
@@ -131,14 +131,14 @@
   <div class="banner-inner" id="serverBanner">
     Запустите локальный прокси: <code>python server.py</code> и откройте
     <a href="http://127.0.0.1:8765/">http://127.0.0.1:8765/</a>.
-    API-ключ — в поле ниже или в переменной <code>API_KEY</code>.
+    API-ключ FireCrawl — в поле ниже или в переменной <code>FIRECRAWL_API_KEY</code>.
   </div>
 </div>
 
 <section class="hero">
   <span class="hero-badge">Search · Scrape · Markdown</span>
   <h1>Поиск информации в интернете и парсинг страниц</h1>
-  <p class="hero-lead" id="heroLead">Откройте по ссылке GitHub Pages — скачивание не нужно. Введите полученный API-ключ , выполните поиск или парсинг URL и сохраните результат в Excel. <span style="opacity:.85">Наведите курсор на любое поле или кнопку — появится подсказка.</span></p>
+  <p class="hero-lead" id="heroLead">Откройте по ссылке GitHub Pages — скачивание не нужно. Введите API-ключ FireCrawl, выполните поиск или парсинг URL и сохраните результат в Excel. <span style="opacity:.85">Наведите курсор на любое поле или кнопку — появится подсказка.</span></p>
 </section>
 
 <nav class="tabs">
@@ -153,12 +153,12 @@
   <div class="grid">
     <div>
       <div class="card">
-        <div class="card-head">API-ключ</div>
+        <div class="card-head">API-ключ FireCrawl</div>
         <div class="card-body">
           <div class="field">
-            <label data-tip="Данные сохраняется только у вас в браузере.">Ключ (fc-…)</label>
-            <input id="apiKey" type="password" placeholder="fc-xxxxxxxx" autocomplete="off" data-tip="Вставьте ключ fc-… .dev → API Keys">
-            <p class="hint">Сохраняется только в браузере. Получить ключ: <a href="https://.dev/app/api-keys" target="_blank" rel="noopener">.dev</a></p>
+            <label data-tip="Пароль от FireCrawl. Без него запросы не отправятся. Сохраняется только у вас в браузере.">Ключ (fc-…)</label>
+            <input id="apiKey" type="password" placeholder="fc-xxxxxxxx" autocomplete="off" data-tip="Вставьте ключ fc-… с сайта firecrawl.dev → API Keys">
+            <p class="hint">Сохраняется только в браузере. Получить ключ: <a href="https://www.firecrawl.dev/app/api-keys" target="_blank" rel="noopener">firecrawl.dev</a></p>
           </div>
         </div>
       </div>
@@ -175,7 +175,7 @@
             <div class="field-row">
               <div class="field">
                 <label data-tip="Сколько ссылок вернуть из поиска (макс. 100).">Кол-во результатов</label>
-                <select id="searchLimit" data-tip="Больше результатов = больше кредитов.">
+                <select id="searchLimit" data-tip="Больше результатов = больше кредитов FireCrawl.">
                   <option value="5">5</option>
                   <option value="10" selected>10</option>
                   <option value="20">20</option>
@@ -202,7 +202,7 @@
               <input id="includeDomains" placeholder="consultant.ru, normativ.kontur.ru" data-tip="Только эти сайты в выдаче. Через запятую или пробел, без https://">
               <p class="hint">Через запятую или пробел. Без https://</p>
             </div>
-            <button class="btn-run" id="btnSearch" data-tip="Отправит поиск → результаты появятся справа → экспорт в Excel/MD">▶ Найти и распарсить</button>
+            <button class="btn-run" id="btnSearch" data-tip="Отправит поиск в FireCrawl → результаты появятся справа → экспорт в Excel/MD">▶ Найти и распарсить</button>
           </div>
           <div class="loader" id="loader-search"></div>
         </div>
@@ -219,7 +219,7 @@
                 <button type="button" class="btn-sm" id="btnLoadSvoTemplate" data-tip="Подставит пример про практики трудоустройства ветеранов СВО">Пример: ветераны СВО</button>
               </div>
             </div>
-            <p class="hint" style="margin-bottom:.75rem">Длинное задание разбивается на серию коротких поисков (лимит — 500 символов на запрос). Результаты объединяются и дедupliцируются.</p>
+            <p class="hint" style="margin-bottom:.75rem">Длинное задание разбивается на серию коротких поисков (лимит FireCrawl — 500 символов на запрос). Результаты объединяются и дедupliцируются.</p>
             <div class="field">
               <label data-tip="Полный текст задания. Из него автоматически извлекутся ключевые слова в «кавычках».">Техническое задание</label>
               <textarea id="researchBrief" class="tall" rows="12" placeholder="Опишите цель исследования, тему, период, нужные разделы отчёта, ключевые слова в «кавычках»…" data-tip="Любая тема: HR, рынок, технологии, право и т.д. AI-анализ тоже строится из этого текста."></textarea>
@@ -236,17 +236,19 @@
               </div>
               <div class="field">
                 <label data-tip="Сколько ключевых фраз использовать из списка ниже.">Ключевых запросов (макс.)</label>
-                <select id="researchMaxQueries" data-tip="Каждый запрос = отдельный вызов API. Больше = дольше и дороже.">
+                <select id="researchMaxQueries" data-tip="Сколько строк из списка «Ключевые слова» отправить в поиск. «Все» — каждая строка.">
                   <option value="8">8</option>
-                  <option value="15" selected>15</option>
+                  <option value="15">15</option>
                   <option value="20">20</option>
                   <option value="30">30</option>
+                  <option value="9999" selected>Все из списка</option>
                 </select>
               </div>
             </div>
             <div class="field">
-              <label data-tip="По одной фразе на строку. Авто-заполняется из «кавычек» в задании.">Ключевые слова (по одному на строку, авто из «кавычек»)</label>
-              <textarea id="researchKeywords" rows="6" placeholder="ключевое слово 1&#10;ключевое слово 2&#10;…" data-tip="Заполняется автоматически из «кавычек» в задании или вручную — по одному на строку."></textarea>
+              <label data-tip="По одной фразе на строку. Редактируйте вручную или подтяните из «кавычек» в задании.">Ключевые слова (по одному на строку)</label>
+              <textarea id="researchKeywords" rows="6" placeholder="ключевое слово 1&#10;ключевое слово 2&#10;…" data-tip="При запуске используется этот список как есть. Кнопка «Из задания» — только по запросу."></textarea>
+              <button type="button" class="btn-sm" id="btnParseBriefFields" style="margin-top:.4rem" data-tip="Извлечёт фразы в «кавычках» и домены из текста задания">↻ Из задания</button>
             </div>
             <div class="field">
               <label data-tip="Искать только на этих сайтах (опционально).">Домены (через пробел или запятую)</label>
@@ -258,7 +260,7 @@
                 <label><input type="checkbox" id="researchDateFilter" checked> Публикации с</label>
                 <input type="date" id="researchDateFrom" value="2023-01-01" max="">
               </div>
-              <label data-tip="Дополнительно ищет по всему интернету, не только по указанным доменам."><input type="checkbox" id="researchBroad" checked> Доп. поиск без фильтра доменов</label>
+              <label data-tip="Если включено при указанных доменах — добавляет второй проход по всему интернету (результаты с других сайтов)."><input type="checkbox" id="researchBroad"> Доп. поиск без фильтра доменов</label>
             </div>
             <button class="btn-run" id="btnResearch" data-tip="Запустит серию поисков → объединит ссылки → покажет справа">▶ Запустить исследование</button>
           </div>
@@ -273,7 +275,7 @@
           <div class="card-body">
             <p class="hint" style="margin-bottom:.75rem">Доступно после исследования. Промпт собирается из вашего «Технического задания» + собранных материалов — каждый запуск уникален по содержанию.</p>
             <div class="field">
-              <label data-tip="Ключ OpenAI для GPT-4o-mini. Нужен только для AI-анализа.">Ключ OpenAI (sk-…)</label>
+              <label data-tip="Ключ OpenAI для GPT-4o-mini. Нужен только для AI-анализа, не для FireCrawl.">Ключ OpenAI (sk-…)</label>
               <input id="openaiKey" type="password" placeholder="sk-xxxxxxxx" autocomplete="off" data-tip="Получить: platform.openai.com → API keys. Или задайте OPENAI_API_KEY в server.py">
             </div>
             <div class="field">
@@ -295,7 +297,7 @@
         <div class="card" style="margin-top:1rem">
           <div class="card-head">Обход каталога сайта</div>
           <div class="card-body">
-            <p class="hint" style="margin-bottom:.75rem">Обходит страницы сайта по ссылкам (). Подходит для каталогов объявлений, номеров, товаров. 1 страница ≈ 1 кредит.</p>
+            <p class="hint" style="margin-bottom:.75rem">Обходит страницы сайта по ссылкам (FireCrawl Crawl). Подходит для каталогов объявлений, номеров, товаров. 1 страница ≈ 1 кредит.</p>
             <div class="example-bar">
               <span class="example-bar-label">Примеры</span>
               <div class="example-btns">
@@ -304,7 +306,7 @@
             </div>
             <div class="field">
               <label data-tip="С какой страницы начать обход — обычно главная или каталог.">URL каталога</label>
-              <input id="crawlUrl" type="url" placeholder="https://auto-nomera.ru/" data-tip="Пойдёт по ссылкам с этой страницы. Для номеров: auto-nomera.ru">
+              <input id="crawlUrl" type="url" placeholder="https://auto-nomera.ru/" data-tip="FireCrawl пойдёт по ссылкам с этой страницы. Для номеров: auto-nomera.ru">
             </div>
             <div class="field-row">
               <div class="field">
@@ -1186,13 +1188,56 @@ function extractDomainsFromBrief(text) {
   return [...found];
 }
 
-function parseBriefFields() {
+function parseBriefFields(force = true) {
   const brief = document.getElementById('researchBrief').value;
+  const kwEl = document.getElementById('researchKeywords');
+  const domEl = document.getElementById('researchDomains');
   const keywords = extractKeywordsFromBrief(brief);
   const domains = extractDomainsFromBrief(brief);
-  document.getElementById('researchKeywords').value = keywords.join('\n');
-  document.getElementById('researchDomains').value = domains.join(' ');
+
+  if (force || !kwEl.value.trim()) {
+    if (keywords.length) kwEl.value = keywords.join('\n');
+  }
+  if (force || !domEl.value.trim()) {
+    if (domains.length) domEl.value = domains.join(' ');
+  }
   return { keywords, domains };
+}
+
+function urlMatchesDomains(url, domains) {
+  if (!url || !domains.length) return true;
+  try {
+    const host = new URL(String(url).startsWith('http') ? url : `https://${url}`).hostname.toLowerCase();
+    return domains.some(d => {
+      const dom = d.toLowerCase();
+      return host === dom || host.endsWith(`.${dom}`);
+    });
+  } catch {
+    return false;
+  }
+}
+
+function buildResearchJobs(keywords, domains, broad) {
+  const jobs = [];
+  for (const kw of keywords) {
+    if (domains.length) {
+      jobs.push({
+        query: kw,
+        includeDomains: domains,
+        label: `${kw} [${domains.slice(0, 3).join(', ')}${domains.length > 3 ? '…' : ''}]`,
+        domainOnly: true
+      });
+    }
+    if (broad || !domains.length) {
+      jobs.push({
+        query: kw,
+        includeDomains: [],
+        label: domains.length ? `${kw} (весь web)` : kw,
+        domainOnly: false
+      });
+    }
+  }
+  return jobs;
 }
 
 function itemUrlKey(it) {
@@ -1251,7 +1296,6 @@ async function doResearch() {
     return;
   }
 
-  parseBriefFields();
   const keywords = document.getElementById('researchKeywords').value
     .split(/\n+/).map(s => s.trim()).filter(Boolean);
   const domains = parseDomainsInput(document.getElementById('researchDomains').value);
@@ -1263,20 +1307,28 @@ async function doResearch() {
   const broad = document.getElementById('researchBroad').checked;
 
   if (!keywords.length) {
-    alert('Не найдены ключевые слова. Нажмите «Пример: …» или добавьте слова в список.');
+    alert('Не найдены ключевые слова. Заполните список, нажмите «Из задания» или «Пример: …».');
     return;
+  }
+
+  const kwSlice = maxQueries >= keywords.length ? keywords : keywords.slice(0, maxQueries);
+  const jobs = buildResearchJobs(kwSlice, domains, broad);
+
+  if (!jobs.length) {
+    alert('Нет запросов для запуска. Добавьте ключевые слова или домены.');
+    return;
+  }
+
+  if (domains.length && broad) {
+    const ok = confirm(
+      `Включён «Доп. поиск без фильтра доменов» — часть результатов будет с других сайтов, не только: ${domains.slice(0, 5).join(', ')}${domains.length > 5 ? '…' : ''}.\n\nПродолжить?`
+    );
+    if (!ok) return;
   }
 
   const btn = document.getElementById('btnResearch');
   btn.disabled = true;
   hideError();
-
-  const jobs = [];
-  const kwSlice = keywords.slice(0, maxQueries);
-  for (const kw of kwSlice) {
-    if (domains.length) jobs.push({ query: kw, includeDomains: domains, label: kw });
-    if (broad) jobs.push({ query: kw, includeDomains: [], label: `${kw} (весь web)` });
-  }
 
   const allItems = [];
   let queriesRun = 0;
@@ -1299,7 +1351,11 @@ async function doResearch() {
           };
           if (job.includeDomains.length) body.includeDomains = job.includeDomains;
           const json = await firecrawlRequest('search', body);
-          mergeSearchItems(allItems, normalizeItems(json.data), job.label);
+          let items = normalizeItems(json.data);
+          if (job.domainOnly && job.includeDomains.length) {
+            items = items.filter(it => urlMatchesDomains(it.url || it.sourceURL, job.includeDomains));
+          }
+          mergeSearchItems(allItems, items, job.label);
           queriesRun++;
         } catch (e) {
           errors++;
@@ -1308,12 +1364,15 @@ async function doResearch() {
         if (i < jobs.length - 1) await new Promise(r => setTimeout(r, 400));
       }
 
-      renderResults(`Исследование: ${kwSlice.length} ключевых слов`, allItems, {
+      renderResults(`Исследование: ${kwSlice.length} из ${keywords.length} ключевых слов`, allItems, {
         ms: Math.round(performance.now() - t0),
         queriesRun,
         errors,
         limit,
         mode: 'research',
+        keywordsUsed: kwSlice.length,
+        keywordsTotal: keywords.length,
+        domains: domains.length ? domains.join(', ') : 'весь web',
         researchBrief: document.getElementById('researchBrief').value.trim()
       });
 
@@ -1344,7 +1403,7 @@ function loadHrTemplate(switchTab = false) {
 
 function loadSvoTemplate(switchTab = true) {
   document.getElementById('researchBrief').value = SVO_RESEARCH_BRIEF;
-  parseBriefFields();
+  parseBriefFields(true);
   if (switchTab) document.querySelector('[data-tab="research"]').click();
 }
 
@@ -1461,6 +1520,12 @@ document.getElementById('btnCrawl').addEventListener('click', doCrawl);
 document.getElementById('btnCrawlPresetAuto').addEventListener('click', loadCrawlPresetAuto);
 document.getElementById('btnLoadHrTemplate').addEventListener('click', () => loadHrTemplate(true));
 document.getElementById('btnLoadSvoTemplate').addEventListener('click', () => loadSvoTemplate(true));
+document.getElementById('btnParseBriefFields').addEventListener('click', () => {
+  const { keywords, domains } = parseBriefFields(true);
+  if (!keywords.length && !domains.length) {
+    alert('В задании не найдены фразы в «кавычках» или домены. Добавьте их вручную в списки ниже.');
+  }
+});
 document.getElementById('btnScrape').addEventListener('click', doScrape);
 document.getElementById('apiKey').addEventListener('change', saveApiKey);
 
@@ -1623,7 +1688,7 @@ function exportToExcel() {
     ['Лимит страниц', lastPayload.meta?.limit ?? ''],
     ['Время ответа, мс', lastPayload.meta?.ms ?? ''],
     ['Дата выгрузки', exportedAt],
-    ['Примечание', isCrawl ? 'Обход каталога' : 'Колонки 1–36 заполняются вручную или через AI']
+    ['Примечание', isCrawl ? 'Обход каталога через FireCrawl Crawl' : 'Колонки 1–36 заполняются вручную или через AI']
   ];
   const wsInfo = XLSX.utils.aoa_to_sheet(infoRows);
   wsInfo['!cols'] = [{ wch: 22 }, { wch: 60 }];
@@ -1661,7 +1726,7 @@ async function checkServer() {
 
   status.innerHTML = '<span class="dot ok"></span>Онлайн-режим';
   banner.classList.add('ok');
-  banner.innerHTML = `Работает по ссылке — скачивание не нужно. Введите полученный API-ключ слева и нажмите «Найти» или «Распарсить». Экспорт в Excel — кнопкой справа над результатами.`;
+  banner.innerHTML = `Работает по ссылке — скачивание не нужно. Введите API-ключ FireCrawl слева и нажмите «Найти» или «Распарсить». Экспорт в Excel — кнопкой справа над результатами.`;
 }
 
 loadApiKey();
