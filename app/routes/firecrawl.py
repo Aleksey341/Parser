@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from flask import Blueprint, jsonify, request
 
-from app.config import firecrawl_key_from_payload
+from app.config import api_key_from_headers, firecrawl_key_from_payload
+from app.rate_limit import rate_limit
 from app.services.credit_log import (
     estimate_crawl_credits,
     estimate_scrape_credits,
@@ -16,7 +17,12 @@ from app.validators import ValidationError, build_firecrawl_url, validate_firecr
 bp = Blueprint("firecrawl", __name__, url_prefix="/api/firecrawl")
 
 
+def _resolve_firecrawl_key(payload: dict | None = None) -> str:
+    return api_key_from_headers(request.headers) or firecrawl_key_from_payload(payload)
+
+
 @bp.route("/search", methods=["POST", "OPTIONS"])
+@rate_limit
 def search():
     if request.method == "OPTIONS":
         return ("", 204)
@@ -25,7 +31,7 @@ def search():
     if not query:
         return jsonify({"error": "Укажите query"}), 400
 
-    api_key = firecrawl_key_from_payload(payload)
+    api_key = _resolve_firecrawl_key(payload)
     body = firecrawl_client.build_search_body(payload)
     credits = estimate_search_credits(body["limit"], bool(payload.get("scrape")))
     log_credit_usage("search", estimated_credits=credits, details={"query": query[:120], "limit": body["limit"]})
@@ -37,6 +43,7 @@ def search():
 
 
 @bp.route("/scrape", methods=["POST", "OPTIONS"])
+@rate_limit
 def scrape():
     if request.method == "OPTIONS":
         return ("", 204)
@@ -45,7 +52,7 @@ def scrape():
     if not url:
         return jsonify({"error": "Укажите url"}), 400
 
-    api_key = firecrawl_key_from_payload(payload)
+    api_key = _resolve_firecrawl_key(payload)
     formats = payload.get("formats") or ["markdown"]
     body = {"url": url, "formats": formats}
     credits = estimate_scrape_credits()
@@ -58,6 +65,7 @@ def scrape():
 
 
 @bp.route("/crawl", methods=["POST", "OPTIONS"])
+@rate_limit
 def crawl():
     if request.method == "OPTIONS":
         return ("", 204)
@@ -66,7 +74,7 @@ def crawl():
     if not url:
         return jsonify({"error": "Укажите url"}), 400
 
-    api_key = firecrawl_key_from_payload(payload)
+    api_key = _resolve_firecrawl_key(payload)
     body = firecrawl_client.build_crawl_body(payload)
     credits = estimate_crawl_credits(body["limit"])
     log_credit_usage("crawl", estimated_credits=credits, details={"url": url[:200], "limit": body["limit"]})
@@ -78,11 +86,13 @@ def crawl():
 
 
 @bp.route("/get", methods=["GET", "OPTIONS"])
+@rate_limit
 def get_proxy():
     if request.method == "OPTIONS":
         return ("", 204)
 
-    api_key = firecrawl_key_from_payload(dict(request.args))
+    # Ключ только из заголовков / env — не из query (иначе утекает в access-логи).
+    api_key = _resolve_firecrawl_key()
     next_url = str(request.args.get("next") or "").strip()
     path = str(request.args.get("path") or "").strip()
 

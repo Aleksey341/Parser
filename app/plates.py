@@ -3,10 +3,12 @@ from __future__ import annotations
 
 import re
 
-PLATE_PATTERN = re.compile(
-    r"[ABEKMHOPCTYXАВЕКМНОРСТУХ]\d{3}[ABEKMHOPCTYXАВЕКМНОРСТУХ]{2}\d{2,3}",
-    re.IGNORECASE,
+# Единый источник правды. JS синхронизируется через scripts/build_static.py → plate-pattern.js
+PLATE_PATTERN_SOURCE = (
+    r"[ABEKMHOPCTYXАВЕКМНОРСТУХ]\d{3}[ABEKMHOPCTYXАВЕКМНОРСТУХ]{2}\d{2,3}"
 )
+
+PLATE_PATTERN = re.compile(PLATE_PATTERN_SOURCE, re.IGNORECASE)
 
 
 def extract_plate_numbers(text: str) -> list[str]:

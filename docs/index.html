@@ -43,6 +43,7 @@
       <div class="card">
         <div class="card-head">API-ключ</div>
         <div class="card-body">
+          <form id="apiKeysForm" autocomplete="off" onsubmit="return false">
           <div class="field">
             <label data-tip="Ключ доступа к API. Без него запросы не отправятся. Сохраняется только у вас в браузере.">Ключ (fc-…)</label>
             <input id="apiKey" type="password" placeholder="fc-xxxxxxxx" autocomplete="off" data-tip="Вставьте полученный API-ключ (fc-…)">
@@ -51,6 +52,7 @@
               <label data-tip="Ключи хранятся в sessionStorage только до закрытия вкладки."><input type="checkbox" id="rememberKeys"> Запомнить ключи в этой вкладке</label>
             </div>
           </div>
+          </form>
         </div>
       </div>
 
@@ -162,7 +164,9 @@
             <p class="hint" style="margin-bottom:.75rem">Доступно после исследования. Промпт собирается из вашего «Технического задания» + собранных материалов — каждый запуск уникален по содержанию.</p>
             <div class="field">
               <label data-tip="Ключ OpenAI для GPT-4o-mini. Нужен только для AI-анализа.">Ключ OpenAI (sk-…)</label>
+              <form id="openaiKeyForm" autocomplete="off" onsubmit="return false">
               <input id="openaiKey" type="password" placeholder="sk-xxxxxxxx" autocomplete="off" data-tip="Получить: platform.openai.com → API keys. Или задайте OPENAI_API_KEY в server.py">
+              </form>
             </div>
             <div class="field">
               <label data-tip="Что именно должен проанализировать ИИ. По умолчанию — из поля «Техническое задание».">Фокус анализа (опционально)</label>
@@ -243,6 +247,16 @@
             <div class="field">
               <label data-tip="Полный адрес одной страницы для скачивания.">URL</label>
               <input id="scrapeUrl" type="url" placeholder="https://example.com/page" data-tip="Одна ссылка = одна страница. Для всего каталога — вкладка «Обход каталога».">
+            </div>
+            <div class="field" id="scrapeEngineField">
+              <label data-tip="Firecrawl — облако (нужен ключ). curl_cffi — локально, обход TLS. Браузер — JS/Cloudflare (CloakBrowser/Playwright).">Движок</label>
+              <select id="scrapeEngine" data-tip="Локальные движки работают только через python server.py">
+                <option value="auto" selected>Авто (Firecrawl → curl_cffi → браузер)</option>
+                <option value="firecrawl">Firecrawl (облако, кредиты)</option>
+                <option value="curl_cffi">curl_cffi (локально, TLS)</option>
+                <option value="browser">Браузер CloakBrowser / Playwright</option>
+              </select>
+              <p class="hint" id="scrapeEngineHint">На GitHub Pages доступен только Firecrawl. Локальные движки — при запуске server.py.</p>
             </div>
             <div class="checks">
               <label data-tip="Чистый текст страницы — удобно читать и экспортировать."><input type="checkbox" id="fmtMarkdown" checked> Markdown</label>

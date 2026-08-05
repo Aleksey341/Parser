@@ -85,10 +85,13 @@ export function buildDirectPayload(kind, body) {
 }
 
 export async function apiPost(path, body) {
+  const apiKey = getApiKey();
+  const headers = { 'Content-Type': 'application/json' };
+  if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
   const res = await fetchWithTimeout(`${API_BASE}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...body, apiKey: getApiKey() || undefined })
+    headers,
+    body: JSON.stringify({ ...body, apiKey: apiKey || undefined })
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(json.error || json.message || `HTTP ${res.status}`);
@@ -128,10 +131,13 @@ export async function firecrawlGet(pathOrUrl) {
   if (!apiKey) throw new Error('Укажите API-ключ в поле слева');
 
   if (USE_LOCAL_PROXY) {
-    const params = new URLSearchParams({ apiKey });
+    const params = new URLSearchParams();
     if (pathOrUrl.startsWith('http')) params.set('next', pathOrUrl);
     else params.set('path', pathOrUrl);
-    const res = await fetchWithTimeout(`${API_BASE}/api/firecrawl/get?${params}`, { cache: 'no-store' });
+    const res = await fetchWithTimeout(`${API_BASE}/api/firecrawl/get?${params}`, {
+      cache: 'no-store',
+      headers: { Authorization: `Bearer ${apiKey}` }
+    });
     const json = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(extractApiError(json, res.status));
     if (json.success === false) throw new Error(extractApiError(json, res.status));
@@ -184,4 +190,92 @@ export async function firecrawlCrawlStart(body) {
   if (!res.ok) throw new Error(extractApiError(json, res.status));
   if (json.success === false) throw new Error(extractApiError(json, res.status));
   return json;
+}
+
+/** Локальный scrape: curl_cffi или browser (только через server.py). */
+export async function localScrape(body) {
+  if (!USE_LOCAL_PROXY) {
+    throw new Error('Локальные движки доступны только при python server.py (127.0.0.1:8765)');
+  }
+  const res = await fetchWithTimeout(`${API_BASE}/api/local/scrape`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(extractApiError(json, res.status));
+  if (json.success === false) throw new Error(extractApiError(json, res.status));
+  return json;
+}
+
+function markdownLen(json) {
+  return String(json?.data?.markdown || json?.data?.content || '').trim().length;
+}
+
+function looksWeakClient(json) {
+  const md = String(json?.data?.markdown || '').trim();
+  const html = String(json?.data?.html || '').toLowerCase();
+  if (md.length < 80) return true;
+  const blob = `${html.slice(0, 4000)} ${md.slice(0, 500).toLowerCase()}`;
+  return /just a moment|checking your browser|cf-browser-verification|access denied|captcha|cloudflare/i.test(
+    blob
+  );
+}
+
+/**
+ * Умный scrape: Firecrawl (если есть ключ) → при пустом/challenge — curl_cffi → browser.
+ * На Pages без прокси остаётся только Firecrawl.
+ */
+export async function scrapeSmart(url, formats = ['markdown']) {
+  const tried = [];
+  let lastJson = null;
+  let lastError = null;
+  const apiKey = getApiKey();
+
+  if (apiKey) {
+    tried.push('firecrawl');
+    try {
+      lastJson = await firecrawlRequest('scrape', { url, formats: [...new Set([...formats, 'html'])] });
+      if (!looksWeakClient(lastJson) && markdownLen(lastJson) >= 80) {
+        return {
+          ...lastJson,
+          _meta: { ...(lastJson._meta || {}), engine: 'firecrawl', fallback_tried: tried }
+        };
+      }
+    } catch (e) {
+      lastError = e;
+    }
+  }
+
+  if (USE_LOCAL_PROXY) {
+    tried.push('local-auto');
+    try {
+      lastJson = await localScrape({
+        url,
+        formats: [...new Set([...formats, 'html'])],
+        engine: 'auto',
+        fallback: true
+      });
+      const engine = lastJson._meta?.engine || 'local';
+      return {
+        ...lastJson,
+        _meta: {
+          ...(lastJson._meta || {}),
+          engine,
+          fallback_tried: [...tried, ...(lastJson._meta?.fallback_tried || [])]
+        }
+      };
+    } catch (e) {
+      lastError = e;
+    }
+  }
+
+  if (lastJson && markdownLen(lastJson) > 0) {
+    return {
+      ...lastJson,
+      _meta: { ...(lastJson._meta || {}), weak: true, fallback_tried: tried }
+    };
+  }
+
+  throw lastError || new Error('Не удалось загрузить текст страницы');
 }

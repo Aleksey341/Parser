@@ -27,6 +27,17 @@ def cors_origins() -> list[str]:
     return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 
+def api_key_from_headers(headers) -> str:
+    """Ключ из Authorization: Bearer … или X-Api-Key (не из query — не попадает в логи URL)."""
+    auth = str(headers.get("Authorization") or "").strip()
+    if auth.lower().startswith("bearer "):
+        token = auth[7:].strip()
+        if token:
+            return token
+    header_key = str(headers.get("X-Api-Key") or "").strip()
+    return header_key
+
+
 def firecrawl_key_from_payload(payload: dict | None = None) -> str:
     key = ""
     if payload:
