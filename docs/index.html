@@ -138,12 +138,17 @@
               <p class="hint" id="researchKeywordCount">В списке: 0 ключевых слов</p>
               <button type="button" class="btn-sm" id="btnParseBriefFields" style="margin-top:.4rem" data-tip="Соберёт поисковые фразы из текста задания (город, комнаты, цена, тема)">↻ Сформировать запросы</button>
             </div>
+            <div class="checks research-scrape-row" id="researchScrapeRow">
+              <label data-tip="Без этой галочки в результатах будут только ссылки и сниппеты. Включение тратит больше кредитов Firecrawl.">
+                <input type="checkbox" id="researchScrape">
+                <strong>Загрузить markdown</strong> (полный текст страниц, медленнее)
+              </label>
+            </div>
             <div class="field">
               <label data-tip="Искать только на этих сайтах (опционально).">Домены (через пробел или запятую)</label>
               <textarea id="researchDomains" rows="3" placeholder="site1.ru site2.ru …" data-tip="Любые домены по теме исследования. Через пробел или запятую, без https://"></textarea>
             </div>
             <div class="checks">
-              <label data-tip="Полный текст страниц. Медленнее, расходует больше кредитов."><input type="checkbox" id="researchScrape"> Загрузить markdown (медленнее, больше кредитов)</label>
               <div class="date-filter" data-tip="Искать только материалы, опубликованные не раньше выбранной даты (до сегодня).">
                 <label><input type="checkbox" id="researchDateFilter" checked> Публикации с</label>
                 <input type="date" id="researchDateFrom" value="2023-01-01" max="">

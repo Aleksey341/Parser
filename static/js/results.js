@@ -1,5 +1,5 @@
 import { MAX_SEARCH_QUERY } from './config.js';
-import { bindEnrichButtons, markdownPlaceholderHtml } from './enrich.js';
+import { bindEnrichButtons, flashResearchScrapeHint, markdownPlaceholderHtml } from './enrich.js';
 import { getLastAiReport, getLastPayload, setLastPayload } from './state.js';
 import { esc, showToast } from './ui.js';
 
@@ -122,6 +122,12 @@ export function renderResults(title, items, meta = {}) {
 
   if (meta.mode === 'research' && items.length > 0) {
     setAiTabVisible(true, true);
-    showToast(`Исследование готово (${items.length} источников). Доступен AI-анализ →`);
+    const withText = items.filter((i) => i.markdown || i.content).length;
+    if (withText === 0) {
+      showToast('Ссылки собраны без текста — включите «Загрузить markdown» слева или догрузите по одной');
+      flashResearchScrapeHint();
+    } else {
+      showToast(`Исследование готово (${items.length} источников). Доступен AI-анализ →`);
+    }
   }
 }

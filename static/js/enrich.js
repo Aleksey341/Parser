@@ -7,18 +7,24 @@ import { getApiKey } from './storage.js';
 function emptyMarkdownHint(mode) {
   if (mode === 'research') {
     return {
-      text: 'Текст страницы не загружен. В исследовании слева включите галочку «Загрузить markdown» и запустите снова — или догрузите одну страницу кнопкой ниже.',
-      checkbox: 'Загрузить markdown (медленнее, больше кредитов)'
+      lead: 'Текст страницы не загружен — исследование шло без полного текста.',
+      detail:
+        'Сейчас нажмите кнопку ниже, чтобы догрузить только эту ссылку. Либо слева, сразу под «Ключевые слова», включите «Загрузить markdown» и запустите исследование заново.',
+      checkbox: 'Загрузить markdown (полный текст страниц)'
     };
   }
   if (mode === 'crawl') {
     return {
-      text: 'Текст страницы не загружен. Во вкладке «Обход каталога» включите галочку «Markdown каждой страницы» или догрузите страницу кнопкой ниже.',
+      lead: 'Текст страницы не загружен.',
+      detail:
+        'Во вкладке «Обход каталога» включите «Markdown каждой страницы» или догрузите эту страницу кнопкой ниже.',
       checkbox: 'Markdown каждой страницы'
     };
   }
   return {
-    text: 'Текст страницы не загружен. Это не отдельная кнопка: во вкладке «Поиск» слева есть галочка «Загрузить полный текст (markdown)». Либо догрузите только эту страницу:',
+    lead: 'Текст страницы не загружен.',
+    detail:
+      'Во вкладке «Поиск» слева есть галочка «Загрузить полный текст (markdown)» — не отдельная кнопка. Либо догрузите только эту страницу:',
     checkbox: 'Загрузить полный текст (markdown)'
   };
 }
@@ -27,14 +33,24 @@ export function markdownPlaceholderHtml(mode) {
   const hint = emptyMarkdownHint(mode);
   const canLoad = USE_LOCAL_PROXY || !!getApiKey();
   return `<div class="md-missing">
-    <p>${esc(hint.text)}</p>
-    <p class="hint">Ищите галочку: «${esc(hint.checkbox)}»</p>
+    <p><strong>${esc(hint.lead)}</strong></p>
+    <p>${esc(hint.detail)}</p>
     ${
       canLoad
         ? `<button type="button" class="btn-sm btn-load-md" data-tip="Скачает markdown только для этой ссылки (Firecrawl → curl_cffi → браузер)">Догрузить текст этой страницы</button>`
-        : `<p class="hint">Чтобы догрузить здесь: укажите API-ключ или запустите python server.py</p>`
+        : `<p class="hint">Чтобы догрузить здесь: укажите API-ключ Firecrawl слева вверху.</p>`
     }
+    <p class="hint">Галочка в параметрах: «${esc(hint.checkbox)}»</p>
   </div>`;
+}
+
+export function flashResearchScrapeHint() {
+  const row = document.getElementById('researchScrapeRow');
+  const input = document.getElementById('researchScrape');
+  if (!row || !input) return;
+  row.classList.add('pulse-hint');
+  row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(() => row.classList.remove('pulse-hint'), 2400);
 }
 
 export async function enrichItemMarkdown(idx, btn) {
@@ -47,6 +63,11 @@ export async function enrichItemMarkdown(idx, btn) {
   const url = item.url || item.sourceURL;
   if (!url) {
     showToast('У результата нет URL');
+    return;
+  }
+
+  if (!USE_LOCAL_PROXY && !getApiKey()) {
+    showToast('Укажите API-ключ Firecrawl слева');
     return;
   }
 
